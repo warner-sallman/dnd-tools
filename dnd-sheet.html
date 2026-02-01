@@ -3272,6 +3272,39 @@
             }
         };
 
+        // Cantrip progression for prepared casters (they don't track spells known, only cantrips)
+        const CANTRIPS_KNOWN_PREPARED_CASTERS = {
+            cleric: {
+                1: 3, 2: 3, 3: 3, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 5,
+                11: 5, 12: 5, 13: 5, 14: 5, 15: 5, 16: 5, 17: 5, 18: 5, 19: 5, 20: 5
+            },
+            druid: {
+                1: 2, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3, 9: 3, 10: 4,
+                11: 4, 12: 4, 13: 4, 14: 4, 15: 4, 16: 4, 17: 4, 18: 4, 19: 4, 20: 4
+            },
+            wizard: {
+                1: 3, 2: 3, 3: 3, 4: 4, 5: 4, 6: 4, 7: 4, 8: 4, 9: 4, 10: 5,
+                11: 5, 12: 5, 13: 5, 14: 5, 15: 5, 16: 5, 17: 5, 18: 5, 19: 5, 20: 5
+            }
+        };
+
+        // Cantrip damage scaling breakpoints (based on CHARACTER level, not class level)
+        const CANTRIP_SCALING = {
+            1: 1,   // Levels 1-4: 1 die
+            5: 2,   // Levels 5-10: 2 dice
+            11: 3,  // Levels 11-16: 3 dice
+            17: 4   // Levels 17-20: 4 dice
+        };
+
+        // Get the cantrip damage multiplier based on character level
+        function getCantripDamageDice() {
+            const level = character?.level || 1;
+            if (level >= 17) return 4;
+            if (level >= 11) return 3;
+            if (level >= 5) return 2;
+            return 1;
+        }
+
         // Check if class is a "known" spellcaster (learns specific spells, can swap on level up)
         function isKnownCaster() {
             if (!character) return false;
@@ -3311,19 +3344,69 @@
             return progression[character.level]?.[0] || 0;
         }
 
-        // Get how many cantrips a known caster should know
+        // Get how many cantrips a caster should know (works for both known and prepared casters)
         function getCantripsKnownCount() {
-            if (!character || !isKnownCaster()) return 0;
+            if (!character) return 0;
+            const cls = character.class?.toLowerCase();
+
+            // Check prepared casters first (Cleric, Druid, Wizard)
+            if (CANTRIPS_KNOWN_PREPARED_CASTERS[cls]) {
+                return CANTRIPS_KNOWN_PREPARED_CASTERS[cls][character.level] || 0;
+            }
+
+            // Then check known casters
+            if (!isKnownCaster()) return 0;
             let progression;
             if (isSubclassCaster()) {
                 const subclass = character.subclass?.toLowerCase();
                 progression = SPELLS_KNOWN_PROGRESSION[subclass];
             } else {
-                const cls = character.class?.toLowerCase();
                 progression = SPELLS_KNOWN_PROGRESSION[cls];
             }
             if (!progression) return 0;
             return progression[character.level]?.[1] || 0;
+        }
+
+        // Check if a class gains additional cantrips at a level
+        function getNewCantripsOnLevelUp(oldLevel, newLevel) {
+            if (!character) return 0;
+            const cls = character.class?.toLowerCase();
+
+            // Check prepared casters
+            if (CANTRIPS_KNOWN_PREPARED_CASTERS[cls]) {
+                const oldCount = CANTRIPS_KNOWN_PREPARED_CASTERS[cls][oldLevel] || 0;
+                const newCount = CANTRIPS_KNOWN_PREPARED_CASTERS[cls][newLevel] || 0;
+                return Math.max(0, newCount - oldCount);
+            }
+
+            // Check known casters
+            if (!isKnownCaster()) return 0;
+            let progression;
+            if (isSubclassCaster()) {
+                const subclass = character.subclass?.toLowerCase();
+                progression = SPELLS_KNOWN_PROGRESSION[subclass];
+            } else {
+                progression = SPELLS_KNOWN_PROGRESSION[cls];
+            }
+            if (!progression) return 0;
+            const oldCount = progression[oldLevel]?.[1] || 0;
+            const newCount = progression[newLevel]?.[1] || 0;
+            return Math.max(0, newCount - oldCount);
+        }
+
+        // Check if class can swap cantrips (2024 rules)
+        function canSwapCantrips() {
+            if (!character) return false;
+            const cls = character.class?.toLowerCase();
+            // All spellcasters can swap cantrips on level up per 2024/Tasha's rules
+            return ['wizard', 'cleric', 'druid', 'sorcerer', 'warlock', 'bard'].includes(cls) || isSubclassCaster();
+        }
+
+        // Check if class can swap cantrips on long rest (Wizard only in 2024 rules)
+        function canSwapCantripsOnLongRest() {
+            if (!character) return false;
+            const cls = character.class?.toLowerCase();
+            return cls === 'wizard';
         }
 
         // Calculate spells to learn on level up for known casters
@@ -3376,6 +3459,33 @@
             return learnable;
         }
 
+        // Scale cantrip damage description based on character level
+        function getScaledCantripDescription(desc) {
+            if (!desc) return desc;
+            const dice = getCantripDamageDice();
+            const level = character?.level || 1;
+
+            // Replace damage dice in description based on character level
+            // Pattern matches things like "1d8 fire damage" or "1d6 piercing damage"
+            let scaledDesc = desc;
+
+            // If level >= 5, show scaled damage
+            if (dice > 1) {
+                // Replace base damage dice with scaled version
+                scaledDesc = desc.replace(/\b1d(\d+)\b/g, (match, dieSize) => {
+                    return `${dice}d${dieSize}`;
+                });
+
+                // Add a note about current scaling
+                const scalingNote = `\n\n[At your level (${level}), this cantrip deals ${dice} dice of damage.]`;
+                if (!scaledDesc.includes('At your level')) {
+                    scaledDesc += scalingNote;
+                }
+            }
+
+            return scaledDesc;
+        }
+
         function showSpellInfo(spellName) {
             const modal = document.getElementById('spellModal');
             const data = SPELL_DESCRIPTIONS[spellName] || SPELL_DATA[spellName];
@@ -3387,11 +3497,15 @@
             const spellSaveDC = 8 + profBonus + abilityMod;
             const spellAttackBonus = profBonus + abilityMod;
 
+            // Check if this is a cantrip for damage scaling
+            const isCantrip = data && data.level && data.level.toLowerCase().includes('cantrip');
+            const cantripDice = getCantripDamageDice();
+
             document.getElementById('spellModalTitle').textContent = spellName;
 
             if (data && data.level) {
                 // Full description available
-                document.getElementById('spellModalMeta').innerHTML = `
+                let metaHtml = `
                     <div class="spell-meta-item"><span class="spell-meta-label">Level:</span> ${data.level}</div>
                     <div class="spell-meta-item"><span class="spell-meta-label">School:</span> ${data.school || 'Unknown'}</div>
                     <div class="spell-meta-item"><span class="spell-meta-label">Time:</span> ${data.time || 'Unknown'}</div>
@@ -3403,7 +3517,17 @@
                     <div class="spell-meta-item" style="background:#8e24aa;"><span class="spell-meta-label">Save DC:</span> ${spellSaveDC}</div>
                     <div class="spell-meta-item" style="background:#00897b;"><span class="spell-meta-label">Attack:</span> +${spellAttackBonus}</div>
                 `;
-                document.getElementById('spellModalDesc').textContent = data.desc || 'No description available.';
+
+                // Add cantrip scaling indicator
+                if (isCantrip && cantripDice > 1) {
+                    metaHtml += `<div class="spell-meta-item" style="background:#e65100;"><span class="spell-meta-label">Scaled:</span> ${cantripDice} dice</div>`;
+                }
+
+                document.getElementById('spellModalMeta').innerHTML = metaHtml;
+
+                // Scale cantrip description if applicable
+                const description = isCantrip ? getScaledCantripDescription(data.desc) : data.desc;
+                document.getElementById('spellModalDesc').textContent = description || 'No description available.';
                 document.getElementById('spellModalFooter').innerHTML = data.higher ? `<strong>At Higher Levels:</strong> ${data.higher}` : '';
             } else if (data) {
                 // Only basic data (ritual, concentration, duration)
@@ -3479,11 +3603,28 @@
             // Cantrips (combine regular + subclass granted)
             const regularCantrips = character.spells?.cantrips || [];
             const allCantrips = [...regularCantrips];
+            const maxCantrips = getCantripsKnownCount();
+            const currentCantrips = allCantrips.length;
+            const cantripDice = getCantripDamageDice();
 
-            if (allCantrips.length > 0 || grantedSubclassCantrips.length > 0) {
+            // Build cantrip scaling info
+            let cantripScalingInfo = '';
+            if (cantripDice > 1) {
+                cantripScalingInfo = ` | Damage: ${cantripDice} dice`;
+            }
+
+            // Build swap info based on class
+            let swapInfo = '';
+            if (canSwapCantripsOnLongRest()) {
+                swapInfo = ' | Swap on Long Rest';
+            } else if (canSwapCantrips()) {
+                swapInfo = ' | Swap on Level Up';
+            }
+
+            if (allCantrips.length > 0 || grantedSubclassCantrips.length > 0 || maxCantrips > 0) {
                 allSpells.push(`
                     <div class="spell-level-group">
-                        <div class="spell-level-title">CANTRIPS (at will)</div>
+                        <div class="spell-level-title">CANTRIPS (${currentCantrips}/${maxCantrips} known${cantripScalingInfo}${swapInfo})</div>
                         ${allCantrips.map(spell => `
                             <div class="spell-item" data-spell="${spell}" onclick="showSpellInfo(this.dataset.spell)">
                                 <span class="spell-name">${spell}</span>
@@ -5027,12 +5168,111 @@
             // Update the display to show restored HP
             renderCharacterSheet();
 
+            // Check if wizard can swap a cantrip (2024 rules)
+            if (canSwapCantripsOnLongRest()) {
+                const currentCantrips = character.spells?.cantrips || [];
+                if (currentCantrips.length > 0) {
+                    const swapCantrip = confirm('Long rest complete! HP restored, spell slots recovered.\n\nAs a Wizard, you can swap one cantrip for another. Would you like to swap a cantrip?');
+                    if (swapCantrip) {
+                        showCantripSwapModal();
+                        return;
+                    }
+                }
+            }
+
             // Prompt for spell preparation if prepared caster
             if (isPreparedCaster()) {
                 showSpellPreparation();
             } else {
                 alert('Long rest complete! HP restored, spell slots recovered.');
             }
+        }
+
+        // Show modal to swap cantrips
+        function showCantripSwapModal() {
+            const currentCantrips = character.spells?.cantrips || [];
+            const cls = character.class?.toLowerCase();
+
+            // Get available cantrips for the class
+            const classCantrips = getClassCantrips(cls);
+            const availableCantrips = classCantrips.filter(c => !currentCantrips.includes(c));
+
+            if (availableCantrips.length === 0) {
+                alert('No other cantrips available to swap to.');
+                if (isPreparedCaster()) {
+                    showSpellPreparation();
+                }
+                return;
+            }
+
+            // Create simple swap interface using prompts
+            const cantripToRemove = prompt(`Select a cantrip to replace:\n\nYour current cantrips:\n${currentCantrips.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nEnter the number of the cantrip to replace (or cancel):`);
+
+            if (!cantripToRemove || isNaN(parseInt(cantripToRemove))) {
+                if (isPreparedCaster()) {
+                    showSpellPreparation();
+                }
+                return;
+            }
+
+            const removeIndex = parseInt(cantripToRemove) - 1;
+            if (removeIndex < 0 || removeIndex >= currentCantrips.length) {
+                alert('Invalid selection.');
+                if (isPreparedCaster()) {
+                    showSpellPreparation();
+                }
+                return;
+            }
+
+            const removedCantrip = currentCantrips[removeIndex];
+
+            // Show available cantrips to add
+            const cantripToAdd = prompt(`Select a new cantrip to learn:\n\nAvailable cantrips:\n${availableCantrips.slice(0, 20).map((c, i) => `${i + 1}. ${c}`).join('\n')}${availableCantrips.length > 20 ? '\n...(more available)' : ''}\n\nEnter the number of the cantrip to learn:`);
+
+            if (!cantripToAdd || isNaN(parseInt(cantripToAdd))) {
+                if (isPreparedCaster()) {
+                    showSpellPreparation();
+                }
+                return;
+            }
+
+            const addIndex = parseInt(cantripToAdd) - 1;
+            if (addIndex < 0 || addIndex >= availableCantrips.length) {
+                alert('Invalid selection.');
+                if (isPreparedCaster()) {
+                    showSpellPreparation();
+                }
+                return;
+            }
+
+            const newCantrip = availableCantrips[addIndex];
+
+            // Perform the swap
+            character.spells.cantrips = currentCantrips.filter(c => c !== removedCantrip);
+            character.spells.cantrips.push(newCantrip);
+
+            // Save changes
+            localStorage.setItem('dnd-active-character', JSON.stringify(character));
+            renderCharacterSheet();
+
+            alert(`Swapped ${removedCantrip} for ${newCantrip}!`);
+
+            if (isPreparedCaster()) {
+                showSpellPreparation();
+            }
+        }
+
+        // Get available cantrips for a class
+        function getClassCantrips(cls) {
+            const cantripLists = {
+                wizard: ['Acid Splash', 'Blade Ward', 'Booming Blade', 'Chill Touch', 'Control Flames', 'Create Bonfire', 'Dancing Lights', 'Fire Bolt', 'Friends', 'Frostbite', 'Green-Flame Blade', 'Gust', 'Infestation', 'Light', 'Lightning Lure', 'Mage Hand', 'Mending', 'Message', 'Mind Sliver', 'Minor Illusion', 'Mold Earth', 'Poison Spray', 'Prestidigitation', 'Ray of Frost', 'Sapping Sting', 'Shape Water', 'Shocking Grasp', 'Sword Burst', 'Thunderclap', 'Toll the Dead', 'True Strike'],
+                cleric: ['Guidance', 'Light', 'Mending', 'Resistance', 'Sacred Flame', 'Spare the Dying', 'Thaumaturgy', 'Toll the Dead', 'Word of Radiance'],
+                druid: ['Control Flames', 'Create Bonfire', 'Druidcraft', 'Frostbite', 'Guidance', 'Gust', 'Infestation', 'Magic Stone', 'Mending', 'Mold Earth', 'Poison Spray', 'Primal Savagery', 'Produce Flame', 'Resistance', 'Shape Water', 'Shillelagh', 'Thorn Whip', 'Thunderclap'],
+                sorcerer: ['Acid Splash', 'Blade Ward', 'Booming Blade', 'Chill Touch', 'Control Flames', 'Create Bonfire', 'Dancing Lights', 'Fire Bolt', 'Friends', 'Frostbite', 'Green-Flame Blade', 'Gust', 'Infestation', 'Light', 'Lightning Lure', 'Mage Hand', 'Mending', 'Message', 'Mind Sliver', 'Minor Illusion', 'Mold Earth', 'Poison Spray', 'Prestidigitation', 'Ray of Frost', 'Shape Water', 'Shocking Grasp', 'Sword Burst', 'Thunderclap', 'True Strike'],
+                warlock: ['Blade Ward', 'Booming Blade', 'Chill Touch', 'Create Bonfire', 'Eldritch Blast', 'Friends', 'Green-Flame Blade', 'Infestation', 'Lightning Lure', 'Mage Hand', 'Magic Stone', 'Mind Sliver', 'Minor Illusion', 'Poison Spray', 'Prestidigitation', 'Sword Burst', 'Thunderclap', 'Toll the Dead', 'True Strike'],
+                bard: ['Blade Ward', 'Dancing Lights', 'Friends', 'Light', 'Mage Hand', 'Mending', 'Message', 'Minor Illusion', 'Prestidigitation', 'Thunderclap', 'True Strike', 'Vicious Mockery']
+            };
+            return cantripLists[cls] || [];
         }
 
         function showSpellPreparation() {
@@ -5488,12 +5728,29 @@
             // Calculate new spells for known casters
             const newSpellsCount = isKnownCaster() ? getNewSpellsOnLevelUp(oldLevel, newLevel) : 0;
 
+            // Calculate new cantrips gained
+            const newCantripsCount = getNewCantripsOnLevelUp(oldLevel, newLevel);
+
+            // Check if cantrip damage scaling changes at this level
+            const oldCantripDice = oldLevel >= 17 ? 4 : oldLevel >= 11 ? 3 : oldLevel >= 5 ? 2 : 1;
+            const newCantripDice = newLevel >= 17 ? 4 : newLevel >= 11 ? 3 : newLevel >= 5 ? 2 : 1;
+            const cantripDamageIncreased = newCantripDice > oldCantripDice;
+
             let confirmMsg = `Level up to ${newLevel}?\n\nYou will gain:\n• Increased HP\n• New features at certain levels`;
             if (needsSubclass) {
                 confirmMsg += `\n• SUBCLASS SELECTION`;
             }
             if (isASILevel) {
                 confirmMsg += `\n• ABILITY SCORE IMPROVEMENT or FEAT`;
+            }
+            if (newCantripsCount > 0) {
+                confirmMsg += `\n• ${newCantripsCount} new cantrip${newCantripsCount > 1 ? 's' : ''} to learn`;
+            }
+            if (canSwapCantrips()) {
+                confirmMsg += `\n• Option to swap 1 cantrip`;
+            }
+            if (cantripDamageIncreased) {
+                confirmMsg += `\n• CANTRIP DAMAGE INCREASED to ${newCantripDice} dice!`;
             }
             if (isWizard()) {
                 confirmMsg += `\n• 2 new spells for your spellbook`;

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#2d1b0e"/>
+  <!-- Border -->
+  <rect x="8" y="8" width="496" height="496" fill="none" stroke="#8b4513" stroke-width="16"/>
+  <!-- D20 hexagon -->
+  <polygon points="256,76 436,180 436,332 256,436 76,332 76,180" fill="#8b2500" stroke="#daa520" stroke-width="8"/>
+  <!-- 20 text -->
+  <text x="256" y="280" font-family="Arial Black, sans-serif" font-size="140" font-weight="bold" fill="#f4e4bc" text-anchor="middle">20</text>
+</svg>

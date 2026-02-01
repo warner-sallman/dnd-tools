@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #333; color: #fff; }
+        canvas { display: block; margin: 10px 0; border: 1px solid #666; }
+        a { color: #4af; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>PWA Icon Generator</h1>
+    <p>Right-click each canvas and "Save image as..." with the filename shown, OR click the download links.</p>
+    <div id="icons"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const container = document.getElementById('icons');
+
+        sizes.forEach(size => {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#2d1b0e';
+            ctx.fillRect(0, 0, size, size);
+
+            // Border
+            const borderWidth = Math.max(2, size / 32);
+            ctx.strokeStyle = '#8b4513';
+            ctx.lineWidth = borderWidth;
+            ctx.strokeRect(borderWidth/2, borderWidth/2, size - borderWidth, size - borderWidth);
+
+            // D20 shape (simplified hexagon)
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.35;
+
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * 60 - 90) * Math.PI / 180;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = '#8b2500';
+            ctx.fill();
+            ctx.strokeStyle = '#daa520';
+            ctx.lineWidth = Math.max(1, size / 64);
+            ctx.stroke();
+
+            // "20" text
+            ctx.fillStyle = '#f4e4bc';
+            ctx.font = `bold ${size * 0.2}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('20', centerX, centerY);
+
+            // Label and download link
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `<strong>icon-${size}.png</strong>`;
+            wrapper.appendChild(canvas);
+
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.textContent = `Download icon-${size}.png`;
+            wrapper.appendChild(link);
+
+            container.appendChild(wrapper);
+        });
+    </script>
+</body>
+</html>

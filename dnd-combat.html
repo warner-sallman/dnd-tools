@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit D&D Combat Manager</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #2d1b0e;
+            font-family: 'Press Start 2P', cursive;
+            color: #f4e4bc;
+            overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: #1a0f07;
+            border-bottom: 4px solid #8b2500;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 0 #1a0f07;
+        }
+
+        .header h1 {
+            color: #8b2500;
+            font-size: 0.9rem;
+            text-shadow: 3px 3px 0 #1a0f07;
+        }
+
+        .header h1 span {
+            color: #daa520;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background: #3d2817;
+            border: 3px solid #8b4513;
+            color: #f4e4bc;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 0.5rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #1a0f07;
+        }
+
+        .header-btn:hover {
+            background: #5c3317;
+        }
+
+        /* ===== MAIN LAYOUT ===== */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+            min-height: calc(100vh - 60px);
+        }
+
+        @media (max-width: 1000px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== PANELS ===== */
+        .panel {
+            background: #3d2817;
+            border: 4px solid #8b4513;
+            padding: 15px;
+            box-shadow: 4px 4px 0 #1a0f07;
+        }
+
+        .panel-title {
+            color: #daa520;
+            font-size: 0.6rem;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 0 #1a0f07;
+            border-bottom: 2px solid #5c3317;
+            padding-bottom: 8px;
+        }
+
+        /* ===== SEARCH BOX ===== */
+        .search-container {
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: #f4e4bc;
+            border: 3px solid #8b4513;
+            color: #2d1b0e;
+            padding: 10px;
+            font-family: inherit;
+            font-size: 0.5rem;
+            box-shadow: inset 2px 2px 0 #d4c4a0;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #8b2500;
+        }
+
+        .search-input::placeholder {
+            color: #8b7355;
+        }
+
+        /* ===== FILTER BUTTONS ===== */
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .filter-btn {
+            background: #2d1b0e;
+            border: 2px solid #5c3317;
+            color: #c4a574;
+            padding: 5px 8px;
+            font-family: inherit;
+            font-size: 0.4rem;
+            cursor: pointer;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: #5c3317;
+            border-color: #8b4513;
+            color: #f4e4bc;
+        }
+
+        /* ===== MONSTER LIST ===== */
+        .monster-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #2d1b0e;
+            border: 2px solid #5c3317;
+            padding: 5px;
+        }
+
+        .monster-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #3d2817;
+            cursor: pointer;
+            font-size: 0.45rem;
+        }
+
+        .monster-item:hover {
+            background: #3d2817;
+        }
+
+        .monster-name {
+            color: #f4e4bc;
+        }
+
+        .monster-cr {
+            color: #daa520;
+            font-size: 0.4rem;
+        }
+
+        .monster-source {
+            color: #6b4423;
+            font-size: 0.35rem;
+        }
+
+        .add-btn {
+            background: #2e7d32;
+            border: 2px solid #4caf50;
+            color: #fff;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 0.4rem;
+            cursor: pointer;
+        }
+
+        .add-btn:hover {
+            background: #388e3c;
+        }
+
+        /* ===== ENCOUNTER ROSTER ===== */
+        .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.45rem;
+        }
+
+        .roster-table th {
+            background: #1a0f07;
+            color: #daa520;
+            padding: 10px 5px;
+            text-align: left;
+            border-bottom: 2px solid #8b4513;
+        }
+
+        .roster-table td {
+            padding: 8px 5px;
+            border-bottom: 1px solid #5c3317;
+            vertical-align: middle;
+        }
+
+        .roster-table tr:hover {
+            background: #4d3827;
+        }
+
+        .roster-table input {
+            background: #f4e4bc;
+            border: 2px solid #8b4513;
+            color: #2d1b0e;
+            padding: 5px;
+            font-family: inherit;
+            font-size: 0.45rem;
+            width: 50px;
+            text-align: center;
+        }
+
+        .remove-btn {
+            background: #c62828;
+            border: 2px solid #e53935;
+            color: #fff;
+            padding: 4px 8px;
+            font-family: inherit;
+            font-size: 0.4rem;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background: #d32f2f;
+        }
+
+        /* ===== ROLL INITIATIVE BUTTON ===== */
+        .roll-initiative-btn {
+            width: 100%;
+            background: #8b2500;
+            border: 4px solid #b8860b;
+            color: #f4e4bc;
+            padding: 15px;
+            font-family: inherit;
+            font-size: 0.6rem;
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #1a0f07;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        .roll-initiative-btn:hover {
+            background: #a52a00;
+        }
+
+        .roll-initiative-btn:disabled {
+            background: #5c3317;
+            border-color: #6b4423;
+            color: #6b4423;
+            cursor: not-allowed;
+        }
+
+        /* ===== TURN ORDER ===== */
+        .turn-order {
+            background: #2d1b0e;
+            border: 2px solid #5c3317;
+            padding: 10px;
+            min-height: 200px;
+        }
+
+        .turn-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #3d2817;
+            border: 2px solid #5c3317;
+            font-size: 0.5rem;
+        }
+
+        .turn-item.monster {
+            border-color: #c62828;
+        }
+
+        .turn-item.player {
+            border-color: #2e7d32;
+            background: #2d3d2e;
+        }
+
+        .turn-item.active {
+            border-color: #daa520;
+            box-shadow: 0 0 10px #daa520;
+        }
+
+        .turn-initiative {
+            background: #1a0f07;
+            color: #daa520;
+            padding: 5px 10px;
+            font-size: 0.6rem;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .turn-name {
+            flex: 1;
+            padding: 0 10px;
+        }
+
+        .turn-hp {
+            color: #4caf50;
+            font-size: 0.4rem;
+        }
+
+        /* ===== ADD PLAYER SECTION ===== */
+        .add-player-section {
+            background: #2d1b0e;
+            border: 2px solid #2e7d32;
+            padding: 10px;
+            margin-top: 15px;
+        }
+
+        .add-player-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .add-player-input {
+            flex: 1;
+            background: #f4e4bc;
+            border: 2px solid #8b4513;
+            color: #2d1b0e;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 0.45rem;
+        }
+
+        .add-player-btn {
+            background: #2e7d32;
+            border: 3px solid #4caf50;
+            color: #fff;
+            padding: 8px 15px;
+            font-family: inherit;
+            font-size: 0.45rem;
+            cursor: pointer;
+        }
+
+        .add-player-btn:hover {
+            background: #388e3c;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #6b4423;
+            font-size: 0.45rem;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2d1b0e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5c3317;
+            border: 2px solid #2d1b0e;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b4513;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>COMBAT <span>MANAGER</span></h1>
+        <div class="header-buttons">
+            <button class="header-btn" onclick="clearEncounter()">CLEAR ALL</button>
+            <button class="header-btn" onclick="resetInitiative()">RESET INITIATIVE</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Left Panel: Monster Selection -->
+        <div class="panel">
+            <h2 class="panel-title">MONSTER COMPENDIUM</h2>
+
+            <div class="search-container">
+                <input type="text" class="search-input" id="monsterSearch" placeholder="Search monsters..." oninput="filterMonsters()">
+            </div>
+
+            <div class="filter-row" id="sourceFilters">
+                <button class="filter-btn active" data-source="all" onclick="setSourceFilter('all')">All</button>
+                <button class="filter-btn" data-source="mm" onclick="setSourceFilter('mm')">MM</button>
+                <button class="filter-btn" data-source="volo" onclick="setSourceFilter('volo')">Volo</button>
+                <button class="filter-btn" data-source="mtof" onclick="setSourceFilter('mtof')">MToF</button>
+                <button class="filter-btn" data-source="ftod" onclick="setSourceFilter('ftod')">FToD</button>
+                <button class="filter-btn" data-source="cos" onclick="setSourceFilter('cos')">CoS</button>
+            </div>
+
+            <div class="filter-row" id="crFilters">
+                <button class="filter-btn active" data-cr="all" onclick="setCRFilter('all')">All CR</button>
+                <button class="filter-btn" data-cr="0-1" onclick="setCRFilter('0-1')">0-1</button>
+                <button class="filter-btn" data-cr="2-4" onclick="setCRFilter('2-4')">2-4</button>
+                <button class="filter-btn" data-cr="5-10" onclick="setCRFilter('5-10')">5-10</button>
+                <button class="filter-btn" data-cr="11-16" onclick="setCRFilter('11-16')">11-16</button>
+                <button class="filter-btn" data-cr="17+" onclick="setCRFilter('17+')">17+</button>
+            </div>
+
+            <div class="monster-list" id="monsterList">
+                <!-- Monsters will be populated here -->
+            </div>
+        </div>
+
+        <!-- Right Panel: Encounter & Turn Order -->
+        <div class="panel">
+            <h2 class="panel-title">ENCOUNTER ROSTER</h2>
+
+            <table class="roster-table" id="rosterTable">
+                <thead>
+                    <tr>
+                        <th>Monster</th>
+                        <th>CR</th>
+                        <th>HP</th>
+                        <th>AC</th>
+                        <th>Init Mod</th>
+                        <th>Qty</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="rosterBody">
+                    <tr id="emptyRoster">
+                        <td colspan="7" class="empty-state">Add monsters from the compendium</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button class="roll-initiative-btn" id="rollInitiativeBtn" onclick="rollInitiative()" disabled>
+                ⚔️ ROLL INITIATIVE ⚔️
+            </button>
+
+            <h2 class="panel-title" style="margin-top: 20px;">TURN ORDER</h2>
+
+            <div class="turn-order" id="turnOrder">
+                <div class="empty-state">Roll initiative to begin combat</div>
+            </div>
+
+            <div class="add-player-section">
+                <div class="add-player-row">
+                    <input type="text" class="add-player-input" id="playerName" placeholder="Player name">
+                    <input type="text" class="add-player-input" id="playerInit" placeholder="Initiative" style="width: 80px;">
+                    <button class="add-player-btn" onclick="addPlayer()">ADD PLAYER</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // State
+        let currentSourceFilter = 'all';
+        let currentCRFilter = 'all';
+        let encounterRoster = [];
+        let turnOrder = [];
+        let initiativeRolled = false;
+
+        // Monster database - comprehensive list from all sourcebooks
+        const MONSTERS = {
+            // ===== MONSTER MANUAL (A-D) =====
+            'Aboleth': { cr: '10', hp: 135, ac: 17, dex: 9, source: 'mm' },
+            'Acolyte': { cr: '1/4', hp: 9, ac: 10, dex: 10, source: 'mm' },
+            'Adult Black Dragon': { cr: '14', hp: 195, ac: 19, dex: 14, source: 'mm' },
+            'Adult Blue Dragon': { cr: '16', hp: 225, ac: 19, dex: 10, source: 'mm' },
+            'Adult Brass Dragon': { cr: '13', hp: 172, ac: 18, dex: 10, source: 'mm' },
+            'Adult Bronze Dragon': { cr: '15', hp: 212, ac: 19, dex: 10, source: 'mm' },
+            'Adult Copper Dragon': { cr: '14', hp: 184, ac: 18, dex: 12, source: 'mm' },
+            'Adult Gold Dragon': { cr: '17', hp: 256, ac: 19, dex: 14, source: 'mm' },
+            'Adult Green Dragon': { cr: '15', hp: 207, ac: 19, dex: 12, source: 'mm' },
+            'Adult Red Dragon': { cr: '17', hp: 256, ac: 19, dex: 10, source: 'mm' },
+            'Adult Silver Dragon': { cr: '16', hp: 243, ac: 19, dex: 10, source: 'mm' },
+            'Adult White Dragon': { cr: '13', hp: 200, ac: 18, dex: 10, source: 'mm' },
+            'Air Elemental': { cr: '5', hp: 90, ac: 15, dex: 20, source: 'mm' },
+            'Ancient Black Dragon': { cr: '21', hp: 367, ac: 22, dex: 14, source: 'mm' },
+            'Ancient Blue Dragon': { cr: '23', hp: 481, ac: 22, dex: 10, source: 'mm' },
+            'Ancient Brass Dragon': { cr: '20', hp: 297, ac: 20, dex: 10, source: 'mm' },
+            'Ancient Bronze Dragon': { cr: '22', hp: 444, ac: 22, dex: 10, source: 'mm' },
+            'Ancient Copper Dragon': { cr: '21', hp: 350, ac: 21, dex: 12, source: 'mm' },
+            'Ancient Gold Dragon': { cr: '24', hp: 546, ac: 22, dex: 14, source: 'mm' },
+            'Ancient Green Dragon': { cr: '22', hp: 385, ac: 21, dex: 12, source: 'mm' },
+            'Ancient Red Dragon': { cr: '24', hp: 546, ac: 22, dex: 10, source: 'mm' },
+            'Ancient Silver Dragon': { cr: '23', hp: 487, ac: 22, dex: 10, source: 'mm' },
+            'Ancient White Dragon': { cr: '20', hp: 333, ac: 20, dex: 10, source: 'mm' },
+            'Androsphinx': { cr: '17', hp: 199, ac: 17, dex: 10, source: 'mm' },
+            'Animated Armor': { cr: '1', hp: 33, ac: 18, dex: 11, source: 'mm' },
+            'Ankheg': { cr: '2', hp: 39, ac: 14, dex: 11, source: 'mm' },
+            'Ape': { cr: '1/2', hp: 19, ac: 12, dex: 14, source: 'mm' },
+            'Archmage': { cr: '12', hp: 99, ac: 12, dex: 14, source: 'mm' },
+            'Assassin': { cr: '8', hp: 78, ac: 15, dex: 16, source: 'mm' },
+            'Awakened Shrub': { cr: '0', hp: 10, ac: 9, dex: 8, source: 'mm' },
+            'Awakened Tree': { cr: '2', hp: 59, ac: 13, dex: 6, source: 'mm' },
+            'Axe Beak': { cr: '1/4', hp: 19, ac: 11, dex: 12, source: 'mm' },
+            'Azer': { cr: '2', hp: 39, ac: 17, dex: 12, source: 'mm' },
+            'Baboon': { cr: '0', hp: 3, ac: 12, dex: 14, source: 'mm' },
+            'Badger': { cr: '0', hp: 3, ac: 10, dex: 11, source: 'mm' },
+            'Balor': { cr: '19', hp: 262, ac: 19, dex: 15, source: 'mm' },
+            'Bandit': { cr: '1/8', hp: 11, ac: 12, dex: 12, source: 'mm' },
+            'Bandit Captain': { cr: '2', hp: 65, ac: 15, dex: 16, source: 'mm' },
+            'Barbed Devil': { cr: '5', hp: 110, ac: 15, dex: 17, source: 'mm' },
+            'Basilisk': { cr: '3', hp: 52, ac: 15, dex: 8, source: 'mm' },
+            'Bat': { cr: '0', hp: 1, ac: 12, dex: 15, source: 'mm' },
+            'Bearded Devil': { cr: '3', hp: 52, ac: 13, dex: 15, source: 'mm' },
+            'Behir': { cr: '11', hp: 168, ac: 17, dex: 16, source: 'mm' },
+            'Beholder': { cr: '13', hp: 180, ac: 18, dex: 14, source: 'mm' },
+            'Beholder Zombie': { cr: '5', hp: 93, ac: 15, dex: 8, source: 'mm' },
+            'Berserker': { cr: '2', hp: 67, ac: 13, dex: 12, source: 'mm' },
+            'Black Bear': { cr: '1/2', hp: 19, ac: 11, dex: 10, source: 'mm' },
+            'Black Dragon Wyrmling': { cr: '2', hp: 33, ac: 17, dex: 14, source: 'mm' },
+            'Black Pudding': { cr: '4', hp: 85, ac: 7, dex: 5, source: 'mm' },
+            'Blink Dog': { cr: '1/4', hp: 22, ac: 13, dex: 17, source: 'mm' },
+            'Blood Hawk': { cr: '1/8', hp: 7, ac: 12, dex: 14, source: 'mm' },
+            'Blue Dragon Wyrmling': { cr: '3', hp: 52, ac: 17, dex: 10, source: 'mm' },
+            'Boar': { cr: '1/4', hp: 11, ac: 11, dex: 11, source: 'mm' },
+            'Bone Devil': { cr: '9', hp: 142, ac: 19, dex: 16, source: 'mm' },
+            'Brass Dragon Wyrmling': { cr: '1', hp: 16, ac: 16, dex: 10, source: 'mm' },
+            'Bronze Dragon Wyrmling': { cr: '2', hp: 32, ac: 17, dex: 10, source: 'mm' },
+            'Brown Bear': { cr: '1', hp: 34, ac: 11, dex: 10, source: 'mm' },
+            'Bugbear': { cr: '1', hp: 27, ac: 16, dex: 14, source: 'mm' },
+            'Bulette': { cr: '5', hp: 94, ac: 17, dex: 11, source: 'mm' },
+            'Bullywug': { cr: '1/4', hp: 11, ac: 15, dex: 12, source: 'mm' },
+            'Cambion': { cr: '5', hp: 82, ac: 19, dex: 18, source: 'mm' },
+            'Camel': { cr: '1/8', hp: 15, ac: 9, dex: 8, source: 'mm' },
+            'Carrion Crawler': { cr: '2', hp: 51, ac: 13, dex: 13, source: 'mm' },
+            'Cat': { cr: '0', hp: 2, ac: 12, dex: 15, source: 'mm' },
+            'Centaur': { cr: '2', hp: 45, ac: 12, dex: 14, source: 'mm' },
+            'Chain Devil': { cr: '8', hp: 85, ac: 16, dex: 15, source: 'mm' },
+            'Chimera': { cr: '6', hp: 114, ac: 14, dex: 11, source: 'mm' },
+            'Chuul': { cr: '4', hp: 93, ac: 16, dex: 10, source: 'mm' },
+            'Clay Golem': { cr: '9', hp: 133, ac: 14, dex: 9, source: 'mm' },
+            'Cloaker': { cr: '8', hp: 78, ac: 14, dex: 15, source: 'mm' },
+            'Cloud Giant': { cr: '9', hp: 200, ac: 14, dex: 10, source: 'mm' },
+            'Cockatrice': { cr: '1/2', hp: 27, ac: 11, dex: 12, source: 'mm' },
+            'Commoner': { cr: '0', hp: 4, ac: 10, dex: 10, source: 'mm' },
+            'Constrictor Snake': { cr: '1/4', hp: 13, ac: 12, dex: 14, source: 'mm' },
+            'Copper Dragon Wyrmling': { cr: '1', hp: 22, ac: 16, dex: 12, source: 'mm' },
+            'Couatl': { cr: '4', hp: 97, ac: 19, dex: 20, source: 'mm' },
+            'Crab': { cr: '0', hp: 2, ac: 11, dex: 11, source: 'mm' },
+            'Crawling Claw': { cr: '0', hp: 2, ac: 12, dex: 14, source: 'mm' },
+            'Crocodile': { cr: '1/2', hp: 19, ac: 12, dex: 10, source: 'mm' },
+            'Cult Fanatic': { cr: '2', hp: 33, ac: 13, dex: 14, source: 'mm' },
+            'Cultist': { cr: '1/8', hp: 9, ac: 12, dex: 12, source: 'mm' },
+            'Cyclops': { cr: '6', hp: 138, ac: 14, dex: 11, source: 'mm' },
+            'Darkmantle': { cr: '1/2', hp: 22, ac: 11, dex: 12, source: 'mm' },
+            'Death Dog': { cr: '1', hp: 39, ac: 12, dex: 14, source: 'mm' },
+            'Death Knight': { cr: '17', hp: 180, ac: 20, dex: 11, source: 'mm' },
+            'Death Slaad': { cr: '10', hp: 170, ac: 18, dex: 15, source: 'mm' },
+            'Death Tyrant': { cr: '14', hp: 187, ac: 19, dex: 14, source: 'mm' },
+            'Deer': { cr: '0', hp: 4, ac: 13, dex: 16, source: 'mm' },
+            'Demilich': { cr: '18', hp: 80, ac: 20, dex: 20, source: 'mm' },
+            'Deva': { cr: '10', hp: 136, ac: 17, dex: 18, source: 'mm' },
+            'Dire Wolf': { cr: '1', hp: 37, ac: 14, dex: 15, source: 'mm' },
+            'Displacer Beast': { cr: '3', hp: 85, ac: 13, dex: 15, source: 'mm' },
+            'Djinni': { cr: '11', hp: 161, ac: 17, dex: 15, source: 'mm' },
+            'Doppelganger': { cr: '3', hp: 52, ac: 14, dex: 18, source: 'mm' },
+            'Draft Horse': { cr: '1/4', hp: 19, ac: 10, dex: 10, source: 'mm' },
+            'Dragon Turtle': { cr: '17', hp: 341, ac: 20, dex: 10, source: 'mm' },
+            'Dretch': { cr: '1/4', hp: 18, ac: 11, dex: 11, source: 'mm' },
+            'Drider': { cr: '6', hp: 123, ac: 19, dex: 16, source: 'mm' },
+            'Drow': { cr: '1/4', hp: 13, ac: 15, dex: 14, source: 'mm' },
+            'Drow Elite Warrior': { cr: '5', hp: 71, ac: 18, dex: 18, source: 'mm' },
+            'Drow Mage': { cr: '7', hp: 45, ac: 12, dex: 14, source: 'mm' },
+            'Drow Priestess of Lolth': { cr: '8', hp: 71, ac: 16, dex: 14, source: 'mm' },
+            'Druid': { cr: '2', hp: 27, ac: 11, dex: 12, source: 'mm' },
+            'Dryad': { cr: '1', hp: 22, ac: 11, dex: 12, source: 'mm' },
+            'Duergar': { cr: '1', hp: 26, ac: 16, dex: 11, source: 'mm' },
+            'Dust Mephit': { cr: '1/2', hp: 17, ac: 12, dex: 14, source: 'mm' },
+            // ===== MONSTER MANUAL (E-G) =====
+            'Eagle': { cr: '0', hp: 3, ac: 12, dex: 15, source: 'mm' },
+            'Earth Elemental': { cr: '5', hp: 126, ac: 17, dex: 8, source: 'mm' },
+            'Efreeti': { cr: '11', hp: 200, ac: 17, dex: 12, source: 'mm' },
+            'Elephant': { cr: '4', hp: 76, ac: 12, dex: 9, source: 'mm' },
+            'Elk': { cr: '1/4', hp: 13, ac: 10, dex: 10, source: 'mm' },
+            'Empyrean': { cr: '23', hp: 313, ac: 22, dex: 21, source: 'mm' },
+            'Erinyes': { cr: '12', hp: 153, ac: 18, dex: 16, source: 'mm' },
+            'Ettercap': { cr: '2', hp: 44, ac: 13, dex: 15, source: 'mm' },
+            'Ettin': { cr: '4', hp: 85, ac: 12, dex: 8, source: 'mm' },
+            'Fire Elemental': { cr: '5', hp: 102, ac: 13, dex: 17, source: 'mm' },
+            'Fire Giant': { cr: '9', hp: 162, ac: 18, dex: 9, source: 'mm' },
+            'Flameskull': { cr: '4', hp: 40, ac: 13, dex: 17, source: 'mm' },
+            'Flesh Golem': { cr: '5', hp: 93, ac: 9, dex: 9, source: 'mm' },
+            'Flumph': { cr: '1/8', hp: 7, ac: 12, dex: 15, source: 'mm' },
+            'Flying Snake': { cr: '1/8', hp: 5, ac: 14, dex: 18, source: 'mm' },
+            'Flying Sword': { cr: '1/4', hp: 17, ac: 17, dex: 15, source: 'mm' },
+            'Fomorian': { cr: '8', hp: 149, ac: 14, dex: 10, source: 'mm' },
+            'Frog': { cr: '0', hp: 1, ac: 11, dex: 13, source: 'mm' },
+            'Frost Giant': { cr: '8', hp: 138, ac: 15, dex: 9, source: 'mm' },
+            'Galeb Duhr': { cr: '6', hp: 85, ac: 16, dex: 14, source: 'mm' },
+            'Gargoyle': { cr: '2', hp: 52, ac: 15, dex: 11, source: 'mm' },
+            'Gas Spore': { cr: '1/2', hp: 1, ac: 5, dex: 1, source: 'mm' },
+            'Gelatinous Cube': { cr: '2', hp: 84, ac: 6, dex: 3, source: 'mm' },
+            'Ghast': { cr: '2', hp: 36, ac: 13, dex: 17, source: 'mm' },
+            'Ghost': { cr: '4', hp: 45, ac: 11, dex: 13, source: 'mm' },
+            'Ghoul': { cr: '1', hp: 22, ac: 12, dex: 15, source: 'mm' },
+            'Giant Ape': { cr: '7', hp: 157, ac: 12, dex: 14, source: 'mm' },
+            'Giant Badger': { cr: '1/4', hp: 13, ac: 10, dex: 10, source: 'mm' },
+            'Giant Bat': { cr: '1/4', hp: 22, ac: 13, dex: 16, source: 'mm' },
+            'Giant Boar': { cr: '2', hp: 42, ac: 12, dex: 10, source: 'mm' },
+            'Giant Centipede': { cr: '1/4', hp: 4, ac: 13, dex: 14, source: 'mm' },
+            'Giant Constrictor Snake': { cr: '2', hp: 60, ac: 12, dex: 14, source: 'mm' },
+            'Giant Crab': { cr: '1/8', hp: 13, ac: 15, dex: 15, source: 'mm' },
+            'Giant Crocodile': { cr: '5', hp: 85, ac: 14, dex: 9, source: 'mm' },
+            'Giant Eagle': { cr: '1', hp: 26, ac: 13, dex: 17, source: 'mm' },
+            'Giant Elk': { cr: '2', hp: 42, ac: 14, dex: 16, source: 'mm' },
+            'Giant Fire Beetle': { cr: '0', hp: 4, ac: 13, dex: 10, source: 'mm' },
+            'Giant Frog': { cr: '1/4', hp: 18, ac: 11, dex: 13, source: 'mm' },
+            'Giant Goat': { cr: '1/2', hp: 19, ac: 11, dex: 11, source: 'mm' },
+            'Giant Hyena': { cr: '1', hp: 45, ac: 12, dex: 14, source: 'mm' },
+            'Giant Lizard': { cr: '1/4', hp: 19, ac: 12, dex: 12, source: 'mm' },
+            'Giant Octopus': { cr: '1', hp: 52, ac: 11, dex: 13, source: 'mm' },
+            'Giant Owl': { cr: '1/4', hp: 19, ac: 12, dex: 15, source: 'mm' },
+            'Giant Poisonous Snake': { cr: '1/4', hp: 11, ac: 14, dex: 18, source: 'mm' },
+            'Giant Rat': { cr: '1/8', hp: 7, ac: 12, dex: 15, source: 'mm' },
+            'Giant Scorpion': { cr: '3', hp: 52, ac: 15, dex: 13, source: 'mm' },
+            'Giant Sea Horse': { cr: '1/2', hp: 16, ac: 13, dex: 15, source: 'mm' },
+            'Giant Shark': { cr: '5', hp: 126, ac: 13, dex: 11, source: 'mm' },
+            'Giant Spider': { cr: '1', hp: 26, ac: 14, dex: 16, source: 'mm' },
+            'Giant Toad': { cr: '1', hp: 39, ac: 11, dex: 13, source: 'mm' },
+            'Giant Vulture': { cr: '1', hp: 22, ac: 10, dex: 10, source: 'mm' },
+            'Giant Wasp': { cr: '1/2', hp: 13, ac: 12, dex: 14, source: 'mm' },
+            'Giant Weasel': { cr: '1/8', hp: 9, ac: 13, dex: 16, source: 'mm' },
+            'Giant Wolf Spider': { cr: '1/4', hp: 11, ac: 13, dex: 16, source: 'mm' },
+            'Gibbering Mouther': { cr: '2', hp: 67, ac: 9, dex: 8, source: 'mm' },
+            'Glabrezu': { cr: '9', hp: 157, ac: 17, dex: 15, source: 'mm' },
+            'Gladiator': { cr: '5', hp: 112, ac: 16, dex: 15, source: 'mm' },
+            'Gnoll': { cr: '1/2', hp: 22, ac: 15, dex: 12, source: 'mm' },
+            'Gnoll Fang of Yeenoghu': { cr: '4', hp: 65, ac: 14, dex: 15, source: 'mm' },
+            'Gnoll Pack Lord': { cr: '2', hp: 49, ac: 15, dex: 14, source: 'mm' },
+            'Goat': { cr: '0', hp: 4, ac: 10, dex: 10, source: 'mm' },
+            'Goblin': { cr: '1/4', hp: 7, ac: 15, dex: 14, source: 'mm' },
+            'Goblin Boss': { cr: '1', hp: 21, ac: 17, dex: 14, source: 'mm' },
+            'Gold Dragon Wyrmling': { cr: '3', hp: 60, ac: 17, dex: 14, source: 'mm' },
+            'Gorgon': { cr: '5', hp: 114, ac: 19, dex: 11, source: 'mm' },
+            'Goristro': { cr: '17', hp: 310, ac: 19, dex: 11, source: 'mm' },
+            'Gray Ooze': { cr: '1/2', hp: 22, ac: 8, dex: 6, source: 'mm' },
+            'Gray Slaad': { cr: '9', hp: 127, ac: 18, dex: 15, source: 'mm' },
+            'Green Dragon Wyrmling': { cr: '2', hp: 38, ac: 17, dex: 12, source: 'mm' },
+            'Green Hag': { cr: '3', hp: 82, ac: 17, dex: 12, source: 'mm' },
+            'Green Slaad': { cr: '8', hp: 127, ac: 16, dex: 15, source: 'mm' },
+            'Grick': { cr: '2', hp: 27, ac: 14, dex: 14, source: 'mm' },
+            'Grick Alpha': { cr: '7', hp: 75, ac: 18, dex: 16, source: 'mm' },
+            'Griffon': { cr: '2', hp: 59, ac: 12, dex: 15, source: 'mm' },
+            'Grimlock': { cr: '1/4', hp: 11, ac: 11, dex: 12, source: 'mm' },
+            'Guard': { cr: '1/8', hp: 11, ac: 16, dex: 12, source: 'mm' },
+            'Guardian Naga': { cr: '10', hp: 127, ac: 18, dex: 18, source: 'mm' },
+            'Gynosphinx': { cr: '11', hp: 136, ac: 17, dex: 15, source: 'mm' },
+            // ===== MONSTER MANUAL (H-O) =====
+            'Half-Red Dragon Veteran': { cr: '5', hp: 65, ac: 18, dex: 13, source: 'mm' },
+            'Harpy': { cr: '1', hp: 38, ac: 11, dex: 13, source: 'mm' },
+            'Hawk': { cr: '0', hp: 1, ac: 13, dex: 16, source: 'mm' },
+            'Hell Hound': { cr: '3', hp: 45, ac: 15, dex: 12, source: 'mm' },
+            'Hezrou': { cr: '8', hp: 136, ac: 16, dex: 17, source: 'mm' },
+            'Hill Giant': { cr: '5', hp: 105, ac: 13, dex: 8, source: 'mm' },
+            'Hippogriff': { cr: '1', hp: 19, ac: 11, dex: 13, source: 'mm' },
+            'Hobgoblin': { cr: '1/2', hp: 11, ac: 18, dex: 12, source: 'mm' },
+            'Hobgoblin Captain': { cr: '3', hp: 39, ac: 17, dex: 14, source: 'mm' },
+            'Hobgoblin Warlord': { cr: '6', hp: 97, ac: 20, dex: 14, source: 'mm' },
+            'Homunculus': { cr: '0', hp: 5, ac: 13, dex: 15, source: 'mm' },
+            'Hook Horror': { cr: '3', hp: 75, ac: 15, dex: 10, source: 'mm' },
+            'Horned Devil': { cr: '11', hp: 178, ac: 18, dex: 17, source: 'mm' },
+            'Hunter Shark': { cr: '2', hp: 45, ac: 12, dex: 13, source: 'mm' },
+            'Hydra': { cr: '8', hp: 172, ac: 15, dex: 12, source: 'mm' },
+            'Hyena': { cr: '0', hp: 5, ac: 11, dex: 13, source: 'mm' },
+            'Ice Devil': { cr: '14', hp: 180, ac: 18, dex: 14, source: 'mm' },
+            'Ice Mephit': { cr: '1/2', hp: 21, ac: 11, dex: 13, source: 'mm' },
+            'Imp': { cr: '1', hp: 10, ac: 13, dex: 17, source: 'mm' },
+            'Intellect Devourer': { cr: '2', hp: 21, ac: 12, dex: 14, source: 'mm' },
+            'Invisible Stalker': { cr: '6', hp: 104, ac: 14, dex: 19, source: 'mm' },
+            'Iron Golem': { cr: '16', hp: 210, ac: 20, dex: 9, source: 'mm' },
+            'Jackal': { cr: '0', hp: 3, ac: 12, dex: 15, source: 'mm' },
+            'Jackalwere': { cr: '1/2', hp: 18, ac: 12, dex: 15, source: 'mm' },
+            'Kenku': { cr: '1/4', hp: 13, ac: 13, dex: 16, source: 'mm' },
+            'Killer Whale': { cr: '3', hp: 90, ac: 12, dex: 10, source: 'mm' },
+            'Knight': { cr: '3', hp: 52, ac: 18, dex: 11, source: 'mm' },
+            'Kobold': { cr: '1/8', hp: 5, ac: 12, dex: 15, source: 'mm' },
+            'Kraken': { cr: '23', hp: 472, ac: 18, dex: 11, source: 'mm' },
+            'Kuo-toa': { cr: '1/4', hp: 18, ac: 13, dex: 10, source: 'mm' },
+            'Kuo-toa Archpriest': { cr: '6', hp: 97, ac: 13, dex: 10, source: 'mm' },
+            'Kuo-toa Monitor': { cr: '3', hp: 65, ac: 13, dex: 10, source: 'mm' },
+            'Kuo-toa Whip': { cr: '1', hp: 65, ac: 11, dex: 10, source: 'mm' },
+            'Lamia': { cr: '4', hp: 97, ac: 13, dex: 13, source: 'mm' },
+            'Lemure': { cr: '0', hp: 13, ac: 7, dex: 5, source: 'mm' },
+            'Lich': { cr: '21', hp: 135, ac: 17, dex: 16, source: 'mm' },
+            'Lion': { cr: '1', hp: 26, ac: 12, dex: 15, source: 'mm' },
+            'Lizard': { cr: '0', hp: 2, ac: 10, dex: 11, source: 'mm' },
+            'Lizardfolk': { cr: '1/2', hp: 22, ac: 15, dex: 10, source: 'mm' },
+            'Lizardfolk King/Queen': { cr: '4', hp: 78, ac: 15, dex: 12, source: 'mm' },
+            'Lizardfolk Shaman': { cr: '2', hp: 27, ac: 13, dex: 10, source: 'mm' },
+            'Mage': { cr: '6', hp: 40, ac: 12, dex: 14, source: 'mm' },
+            'Magma Mephit': { cr: '1/2', hp: 22, ac: 11, dex: 12, source: 'mm' },
+            'Magmin': { cr: '1/2', hp: 9, ac: 14, dex: 15, source: 'mm' },
+            'Mammoth': { cr: '6', hp: 126, ac: 13, dex: 9, source: 'mm' },
+            'Manticore': { cr: '3', hp: 68, ac: 14, dex: 16, source: 'mm' },
+            'Marilith': { cr: '16', hp: 189, ac: 18, dex: 20, source: 'mm' },
+            'Mastiff': { cr: '1/8', hp: 5, ac: 12, dex: 14, source: 'mm' },
+            'Medusa': { cr: '6', hp: 127, ac: 15, dex: 15, source: 'mm' },
+            'Merfolk': { cr: '1/8', hp: 11, ac: 11, dex: 13, source: 'mm' },
+            'Merrow': { cr: '2', hp: 45, ac: 13, dex: 10, source: 'mm' },
+            'Mimic': { cr: '2', hp: 58, ac: 12, dex: 12, source: 'mm' },
+            'Mind Flayer': { cr: '7', hp: 71, ac: 15, dex: 12, source: 'mm' },
+            'Mind Flayer Arcanist': { cr: '8', hp: 71, ac: 15, dex: 12, source: 'mm' },
+            'Minotaur': { cr: '3', hp: 76, ac: 14, dex: 11, source: 'mm' },
+            'Minotaur Skeleton': { cr: '2', hp: 67, ac: 12, dex: 11, source: 'mm' },
+            'Mule': { cr: '1/8', hp: 11, ac: 10, dex: 10, source: 'mm' },
+            'Mummy': { cr: '3', hp: 58, ac: 11, dex: 8, source: 'mm' },
+            'Mummy Lord': { cr: '15', hp: 97, ac: 17, dex: 10, source: 'mm' },
+            'Nalfeshnee': { cr: '13', hp: 184, ac: 18, dex: 10, source: 'mm' },
+            'Needle Blight': { cr: '1/4', hp: 11, ac: 12, dex: 12, source: 'mm' },
+            'Night Hag': { cr: '5', hp: 112, ac: 17, dex: 15, source: 'mm' },
+            'Nightmare': { cr: '3', hp: 68, ac: 13, dex: 15, source: 'mm' },
+            'Noble': { cr: '1/8', hp: 9, ac: 15, dex: 12, source: 'mm' },
+            'Nothic': { cr: '2', hp: 45, ac: 15, dex: 16, source: 'mm' },
+            'Ochre Jelly': { cr: '2', hp: 45, ac: 8, dex: 6, source: 'mm' },
+            'Octopus': { cr: '0', hp: 3, ac: 12, dex: 15, source: 'mm' },
+            'Ogre': { cr: '2', hp: 59, ac: 11, dex: 8, source: 'mm' },
+            'Ogre Zombie': { cr: '2', hp: 85, ac: 8, dex: 6, source: 'mm' },
+            'Oni': { cr: '7', hp: 110, ac: 16, dex: 11, source: 'mm' },
+            'Orc': { cr: '1/2', hp: 15, ac: 13, dex: 12, source: 'mm' },
+            'Orc Eye of Gruumsh': { cr: '2', hp: 45, ac: 16, dex: 12, source: 'mm' },
+            'Orc War Chief': { cr: '4', hp: 93, ac: 16, dex: 12, source: 'mm' },
+            'Orog': { cr: '2', hp: 42, ac: 18, dex: 12, source: 'mm' },
+            'Otyugh': { cr: '5', hp: 114, ac: 14, dex: 11, source: 'mm' },
+            'Owl': { cr: '0', hp: 1, ac: 11, dex: 13, source: 'mm' },
+            'Owlbear': { cr: '3', hp: 59, ac: 13, dex: 12, source: 'mm' },
+            // ===== MONSTER MANUAL (P-Z) =====
+            'Panther': { cr: '1/4', hp: 13, ac: 12, dex: 15, source: 'mm' },
+            'Pegasus': { cr: '2', hp: 59, ac: 12, dex: 15, source: 'mm' },
+            'Pentadrone': { cr: '2', hp: 32, ac: 16, dex: 14, source: 'mm' },
+            'Peryton': { cr: '2', hp: 33, ac: 13, dex: 12, source: 'mm' },
+            'Phase Spider': { cr: '3', hp: 32, ac: 13, dex: 15, source: 'mm' },
+            'Piercer': { cr: '1/2', hp: 22, ac: 15, dex: 13, source: 'mm' },
+            'Pit Fiend': { cr: '20', hp: 300, ac: 19, dex: 14, source: 'mm' },
+            'Pixie': { cr: '1/4', hp: 1, ac: 15, dex: 20, source: 'mm' },
+            'Planetar': { cr: '16', hp: 200, ac: 19, dex: 20, source: 'mm' },
+            'Plesiosaurus': { cr: '2', hp: 68, ac: 13, dex: 15, source: 'mm' },
+            'Poisonous Snake': { cr: '1/8', hp: 2, ac: 13, dex: 16, source: 'mm' },
+            'Polar Bear': { cr: '2', hp: 42, ac: 12, dex: 10, source: 'mm' },
+            'Pony': { cr: '1/8', hp: 11, ac: 10, dex: 10, source: 'mm' },
+            'Priest': { cr: '2', hp: 27, ac: 13, dex: 10, source: 'mm' },
+            'Pseudodragon': { cr: '1/4', hp: 7, ac: 13, dex: 15, source: 'mm' },
+            'Purple Worm': { cr: '15', hp: 247, ac: 18, dex: 7, source: 'mm' },
+            'Quadrone': { cr: '1', hp: 22, ac: 16, dex: 14, source: 'mm' },
+            'Quaggoth': { cr: '2', hp: 45, ac: 13, dex: 12, source: 'mm' },
+            'Quasit': { cr: '1', hp: 7, ac: 13, dex: 17, source: 'mm' },
+            'Quipper': { cr: '0', hp: 1, ac: 13, dex: 16, source: 'mm' },
+            'Rakshasa': { cr: '13', hp: 110, ac: 16, dex: 17, source: 'mm' },
+            'Rat': { cr: '0', hp: 1, ac: 10, dex: 11, source: 'mm' },
+            'Raven': { cr: '0', hp: 1, ac: 12, dex: 14, source: 'mm' },
+            'Red Dragon Wyrmling': { cr: '4', hp: 75, ac: 17, dex: 10, source: 'mm' },
+            'Red Slaad': { cr: '5', hp: 93, ac: 14, dex: 12, source: 'mm' },
+            'Reef Shark': { cr: '1/2', hp: 22, ac: 12, dex: 13, source: 'mm' },
+            'Remorhaz': { cr: '11', hp: 195, ac: 17, dex: 13, source: 'mm' },
+            'Revenant': { cr: '5', hp: 136, ac: 13, dex: 14, source: 'mm' },
+            'Rhinoceros': { cr: '2', hp: 45, ac: 11, dex: 8, source: 'mm' },
+            'Riding Horse': { cr: '1/4', hp: 13, ac: 10, dex: 10, source: 'mm' },
+            'Roc': { cr: '11', hp: 248, ac: 15, dex: 10, source: 'mm' },
+            'Roper': { cr: '5', hp: 93, ac: 20, dex: 8, source: 'mm' },
+            'Rug of Smothering': { cr: '2', hp: 33, ac: 12, dex: 14, source: 'mm' },
+            'Rust Monster': { cr: '1/2', hp: 27, ac: 14, dex: 12, source: 'mm' },
+            'Saber-Toothed Tiger': { cr: '2', hp: 52, ac: 12, dex: 14, source: 'mm' },
+            'Sahuagin': { cr: '1/2', hp: 22, ac: 12, dex: 11, source: 'mm' },
+            'Sahuagin Baron': { cr: '5', hp: 76, ac: 16, dex: 11, source: 'mm' },
+            'Sahuagin Priestess': { cr: '2', hp: 33, ac: 12, dex: 11, source: 'mm' },
+            'Salamander': { cr: '5', hp: 90, ac: 15, dex: 14, source: 'mm' },
+            'Satyr': { cr: '1/2', hp: 31, ac: 14, dex: 16, source: 'mm' },
+            'Scarecrow': { cr: '1', hp: 36, ac: 11, dex: 13, source: 'mm' },
+            'Scout': { cr: '1/2', hp: 16, ac: 13, dex: 14, source: 'mm' },
+            'Sea Hag': { cr: '2', hp: 52, ac: 14, dex: 13, source: 'mm' },
+            'Sea Horse': { cr: '0', hp: 1, ac: 11, dex: 12, source: 'mm' },
+            'Shadow': { cr: '1/2', hp: 16, ac: 12, dex: 14, source: 'mm' },
+            'Shadow Demon': { cr: '4', hp: 66, ac: 13, dex: 17, source: 'mm' },
+            'Shambling Mound': { cr: '5', hp: 136, ac: 15, dex: 8, source: 'mm' },
+            'Shield Guardian': { cr: '7', hp: 142, ac: 17, dex: 8, source: 'mm' },
+            'Shrieker': { cr: '0', hp: 13, ac: 5, dex: 1, source: 'mm' },
+            'Silver Dragon Wyrmling': { cr: '2', hp: 45, ac: 17, dex: 10, source: 'mm' },
+            'Skeleton': { cr: '1/4', hp: 13, ac: 13, dex: 14, source: 'mm' },
+            'Slaad Tadpole': { cr: '1/8', hp: 10, ac: 12, dex: 15, source: 'mm' },
+            'Solar': { cr: '21', hp: 243, ac: 21, dex: 22, source: 'mm' },
+            'Specter': { cr: '1', hp: 22, ac: 12, dex: 14, source: 'mm' },
+            'Spider': { cr: '0', hp: 1, ac: 12, dex: 14, source: 'mm' },
+            'Spirit Naga': { cr: '8', hp: 75, ac: 15, dex: 17, source: 'mm' },
+            'Sprite': { cr: '1/4', hp: 2, ac: 15, dex: 18, source: 'mm' },
+            'Spy': { cr: '1', hp: 27, ac: 12, dex: 15, source: 'mm' },
+            'Steam Mephit': { cr: '1/4', hp: 21, ac: 10, dex: 11, source: 'mm' },
+            'Stirge': { cr: '1/8', hp: 2, ac: 14, dex: 16, source: 'mm' },
+            'Stone Giant': { cr: '7', hp: 126, ac: 17, dex: 15, source: 'mm' },
+            'Stone Golem': { cr: '10', hp: 178, ac: 17, dex: 9, source: 'mm' },
+            'Storm Giant': { cr: '13', hp: 230, ac: 16, dex: 14, source: 'mm' },
+            'Succubus/Incubus': { cr: '4', hp: 66, ac: 15, dex: 17, source: 'mm' },
+            'Swarm of Bats': { cr: '1/4', hp: 22, ac: 12, dex: 15, source: 'mm' },
+            'Swarm of Insects': { cr: '1/2', hp: 22, ac: 12, dex: 13, source: 'mm' },
+            'Swarm of Poisonous Snakes': { cr: '2', hp: 36, ac: 14, dex: 18, source: 'mm' },
+            'Swarm of Quippers': { cr: '1', hp: 28, ac: 13, dex: 16, source: 'mm' },
+            'Swarm of Rats': { cr: '1/4', hp: 24, ac: 10, dex: 11, source: 'mm' },
+            'Swarm of Ravens': { cr: '1/4', hp: 24, ac: 12, dex: 14, source: 'mm' },
+            'Tarrasque': { cr: '30', hp: 676, ac: 25, dex: 11, source: 'mm' },
+            'Thug': { cr: '1/2', hp: 32, ac: 11, dex: 11, source: 'mm' },
+            'Tiger': { cr: '1', hp: 37, ac: 12, dex: 15, source: 'mm' },
+            'Treant': { cr: '9', hp: 138, ac: 16, dex: 8, source: 'mm' },
+            'Tribal Warrior': { cr: '1/8', hp: 11, ac: 12, dex: 11, source: 'mm' },
+            'Triceratops': { cr: '5', hp: 95, ac: 13, dex: 9, source: 'mm' },
+            'Tridrone': { cr: '1/2', hp: 16, ac: 15, dex: 14, source: 'mm' },
+            'Troglodyte': { cr: '1/4', hp: 13, ac: 11, dex: 10, source: 'mm' },
+            'Troll': { cr: '5', hp: 84, ac: 15, dex: 13, source: 'mm' },
+            'Twig Blight': { cr: '1/8', hp: 4, ac: 13, dex: 12, source: 'mm' },
+            'Tyrannosaurus Rex': { cr: '8', hp: 136, ac: 13, dex: 10, source: 'mm' },
+            'Umber Hulk': { cr: '5', hp: 93, ac: 18, dex: 13, source: 'mm' },
+            'Unicorn': { cr: '5', hp: 67, ac: 12, dex: 14, source: 'mm' },
+            'Vampire': { cr: '13', hp: 144, ac: 16, dex: 18, source: 'mm' },
+            'Vampire Spawn': { cr: '5', hp: 82, ac: 15, dex: 16, source: 'mm' },
+            'Veteran': { cr: '3', hp: 58, ac: 17, dex: 13, source: 'mm' },
+            'Violet Fungus': { cr: '1/4', hp: 18, ac: 5, dex: 1, source: 'mm' },
+            'Vrock': { cr: '6', hp: 104, ac: 15, dex: 15, source: 'mm' },
+            'Vulture': { cr: '0', hp: 5, ac: 10, dex: 10, source: 'mm' },
+            'Warhorse': { cr: '1/2', hp: 19, ac: 11, dex: 12, source: 'mm' },
+            'Warhorse Skeleton': { cr: '1/2', hp: 22, ac: 13, dex: 12, source: 'mm' },
+            'Water Elemental': { cr: '5', hp: 114, ac: 14, dex: 14, source: 'mm' },
+            'Weasel': { cr: '0', hp: 1, ac: 13, dex: 16, source: 'mm' },
+            'Werebear': { cr: '5', hp: 135, ac: 10, dex: 10, source: 'mm' },
+            'Wereboar': { cr: '4', hp: 78, ac: 10, dex: 10, source: 'mm' },
+            'Wererat': { cr: '2', hp: 33, ac: 12, dex: 15, source: 'mm' },
+            'Weretiger': { cr: '4', hp: 120, ac: 12, dex: 15, source: 'mm' },
+            'Werewolf': { cr: '3', hp: 58, ac: 11, dex: 13, source: 'mm' },
+            'White Dragon Wyrmling': { cr: '2', hp: 32, ac: 16, dex: 10, source: 'mm' },
+            'Wight': { cr: '3', hp: 45, ac: 14, dex: 14, source: 'mm' },
+            'Will-o\'-Wisp': { cr: '2', hp: 22, ac: 19, dex: 28, source: 'mm' },
+            'Winter Wolf': { cr: '3', hp: 75, ac: 13, dex: 13, source: 'mm' },
+            'Wolf': { cr: '1/4', hp: 11, ac: 13, dex: 15, source: 'mm' },
+            'Worg': { cr: '1/2', hp: 26, ac: 13, dex: 13, source: 'mm' },
+            'Wraith': { cr: '5', hp: 67, ac: 13, dex: 16, source: 'mm' },
+            'Wyvern': { cr: '6', hp: 110, ac: 13, dex: 10, source: 'mm' },
+            'Xorn': { cr: '5', hp: 73, ac: 19, dex: 10, source: 'mm' },
+            'Yeti': { cr: '3', hp: 51, ac: 12, dex: 13, source: 'mm' },
+            'Abominable Yeti': { cr: '9', hp: 137, ac: 15, dex: 10, source: 'mm' },
+            'Young Black Dragon': { cr: '7', hp: 127, ac: 18, dex: 14, source: 'mm' },
+            'Young Blue Dragon': { cr: '9', hp: 152, ac: 18, dex: 10, source: 'mm' },
+            'Young Brass Dragon': { cr: '6', hp: 110, ac: 17, dex: 10, source: 'mm' },
+            'Young Bronze Dragon': { cr: '8', hp: 142, ac: 18, dex: 10, source: 'mm' },
+            'Young Copper Dragon': { cr: '7', hp: 119, ac: 17, dex: 12, source: 'mm' },
+            'Young Gold Dragon': { cr: '10', hp: 178, ac: 18, dex: 14, source: 'mm' },
+            'Young Green Dragon': { cr: '8', hp: 136, ac: 18, dex: 12, source: 'mm' },
+            'Young Red Dragon': { cr: '10', hp: 178, ac: 18, dex: 10, source: 'mm' },
+            'Young Silver Dragon': { cr: '9', hp: 168, ac: 18, dex: 10, source: 'mm' },
+            'Young White Dragon': { cr: '6', hp: 133, ac: 17, dex: 10, source: 'mm' },
+            'Yuan-ti Abomination': { cr: '7', hp: 127, ac: 15, dex: 16, source: 'mm' },
+            'Yuan-ti Malison': { cr: '3', hp: 66, ac: 12, dex: 14, source: 'mm' },
+            'Yuan-ti Pureblood': { cr: '1', hp: 40, ac: 11, dex: 12, source: 'mm' },
+            'Zombie': { cr: '1/4', hp: 22, ac: 8, dex: 6, source: 'mm' },
+            // ===== VOLO'S GUIDE TO MONSTERS =====
+            'Alhoon': { cr: '10', hp: 120, ac: 15, dex: 12, source: 'volo' },
+            'Annis Hag': { cr: '6', hp: 75, ac: 17, dex: 12, source: 'volo' },
+            'Abjurer': { cr: '9', hp: 84, ac: 12, dex: 14, source: 'volo' },
+            'Apprentice Wizard': { cr: '1/4', hp: 9, ac: 10, dex: 10, source: 'volo' },
+            'Archdruid': { cr: '12', hp: 132, ac: 16, dex: 14, source: 'volo' },
+            'Archer': { cr: '3', hp: 75, ac: 16, dex: 18, source: 'volo' },
+            'Banderhobb': { cr: '5', hp: 84, ac: 15, dex: 12, source: 'volo' },
+            'Barghest': { cr: '4', hp: 90, ac: 17, dex: 15, source: 'volo' },
+            'Bard': { cr: '2', hp: 44, ac: 15, dex: 14, source: 'volo' },
+            'Bheur Hag': { cr: '7', hp: 91, ac: 17, dex: 16, source: 'volo' },
+            'Blackguard': { cr: '8', hp: 153, ac: 18, dex: 11, source: 'volo' },
+            'Bodak': { cr: '6', hp: 58, ac: 15, dex: 16, source: 'volo' },
+            'Boggle': { cr: '1/8', hp: 18, ac: 14, dex: 18, source: 'volo' },
+            'Catoblepas': { cr: '5', hp: 84, ac: 14, dex: 10, source: 'volo' },
+            'Cave Fisher': { cr: '3', hp: 58, ac: 16, dex: 13, source: 'volo' },
+            'Champion': { cr: '9', hp: 143, ac: 18, dex: 15, source: 'volo' },
+            'Chitine': { cr: '1/2', hp: 18, ac: 14, dex: 15, source: 'volo' },
+            'Choldrith': { cr: '3', hp: 66, ac: 15, dex: 16, source: 'volo' },
+            'Conjurer': { cr: '6', hp: 40, ac: 12, dex: 14, source: 'volo' },
+            'Cranium Rat': { cr: '0', hp: 2, ac: 12, dex: 14, source: 'volo' },
+            'Darkling': { cr: '1/2', hp: 13, ac: 14, dex: 17, source: 'volo' },
+            'Darkling Elder': { cr: '2', hp: 27, ac: 15, dex: 18, source: 'volo' },
+            'Death Kiss': { cr: '10', hp: 161, ac: 16, dex: 14, source: 'volo' },
+            'Deep Scion': { cr: '3', hp: 67, ac: 11, dex: 13, source: 'volo' },
+            'Devourer': { cr: '13', hp: 178, ac: 16, dex: 12, source: 'volo' },
+            'Diviner': { cr: '8', hp: 63, ac: 12, dex: 14, source: 'volo' },
+            'Draegloth': { cr: '7', hp: 123, ac: 15, dex: 13, source: 'volo' },
+            'Elder Brain': { cr: '14', hp: 210, ac: 10, dex: 10, source: 'volo' },
+            'Enchanter': { cr: '5', hp: 40, ac: 12, dex: 14, source: 'volo' },
+            'Evoker': { cr: '9', hp: 66, ac: 12, dex: 14, source: 'volo' },
+            'Fire Giant Dreadnought': { cr: '14', hp: 187, ac: 21, dex: 9, source: 'volo' },
+            'Firenewt Warlock of Imix': { cr: '1', hp: 33, ac: 10, dex: 11, source: 'volo' },
+            'Firenewt Warrior': { cr: '1/2', hp: 22, ac: 16, dex: 10, source: 'volo' },
+            'Flail Snail': { cr: '3', hp: 52, ac: 16, dex: 8, source: 'volo' },
+            'Froghemoth': { cr: '10', hp: 184, ac: 14, dex: 13, source: 'volo' },
+            'Frost Giant Everlasting One': { cr: '12', hp: 189, ac: 15, dex: 9, source: 'volo' },
+            'Gauth': { cr: '6', hp: 67, ac: 15, dex: 14, source: 'volo' },
+            'Gazer': { cr: '1/2', hp: 13, ac: 13, dex: 17, source: 'volo' },
+            'Giant Strider': { cr: '1', hp: 22, ac: 14, dex: 14, source: 'volo' },
+            'Girallon': { cr: '4', hp: 59, ac: 13, dex: 14, source: 'volo' },
+            'Gnoll Flesh Gnawer': { cr: '1', hp: 22, ac: 14, dex: 14, source: 'volo' },
+            'Gnoll Hunter': { cr: '1/2', hp: 22, ac: 13, dex: 14, source: 'volo' },
+            'Gnoll Witherling': { cr: '1/4', hp: 11, ac: 12, dex: 14, source: 'volo' },
+            'Grung': { cr: '1/4', hp: 11, ac: 12, dex: 14, source: 'volo' },
+            'Grung Elite Warrior': { cr: '2', hp: 49, ac: 13, dex: 16, source: 'volo' },
+            'Grung Wildling': { cr: '1', hp: 27, ac: 13, dex: 16, source: 'volo' },
+            'Guard Drake': { cr: '2', hp: 52, ac: 14, dex: 11, source: 'volo' },
+            'Hobgoblin Devastator': { cr: '4', hp: 45, ac: 13, dex: 12, source: 'volo' },
+            'Hobgoblin Iron Shadow': { cr: '2', hp: 32, ac: 15, dex: 16, source: 'volo' },
+            'Illusionist': { cr: '3', hp: 38, ac: 12, dex: 14, source: 'volo' },
+            'Ki-rin': { cr: '12', hp: 152, ac: 20, dex: 16, source: 'volo' },
+            'Kobold Dragonshield': { cr: '1', hp: 44, ac: 15, dex: 15, source: 'volo' },
+            'Kobold Inventor': { cr: '1/4', hp: 13, ac: 12, dex: 15, source: 'volo' },
+            'Kobold Scale Sorcerer': { cr: '1', hp: 27, ac: 15, dex: 15, source: 'volo' },
+            'Korred': { cr: '7', hp: 102, ac: 17, dex: 14, source: 'volo' },
+            'Kruthik Hive Lord': { cr: '5', hp: 102, ac: 20, dex: 16, source: 'volo' },
+            'Leucrotta': { cr: '3', hp: 67, ac: 14, dex: 14, source: 'volo' },
+            'Martial Arts Adept': { cr: '3', hp: 60, ac: 16, dex: 16, source: 'volo' },
+            'Master Thief': { cr: '5', hp: 84, ac: 16, dex: 18, source: 'volo' },
+            'Maw Demon': { cr: '1', hp: 33, ac: 13, dex: 8, source: 'volo' },
+            'Meenlock': { cr: '2', hp: 31, ac: 15, dex: 15, source: 'volo' },
+            'Mindwitness': { cr: '5', hp: 75, ac: 15, dex: 14, source: 'volo' },
+            'Mouth of Grolantor': { cr: '6', hp: 105, ac: 14, dex: 10, source: 'volo' },
+            'Necromancer': { cr: '9', hp: 66, ac: 12, dex: 14, source: 'volo' },
+            'Neogi': { cr: '3', hp: 33, ac: 15, dex: 15, source: 'volo' },
+            'Neogi Hatchling': { cr: '1/8', hp: 7, ac: 11, dex: 13, source: 'volo' },
+            'Neogi Master': { cr: '4', hp: 71, ac: 15, dex: 15, source: 'volo' },
+            'Neothelid': { cr: '13', hp: 325, ac: 16, dex: 7, source: 'volo' },
+            'Nilbog': { cr: '1', hp: 7, ac: 13, dex: 14, source: 'volo' },
+            'Orc Blade of Ilneval': { cr: '4', hp: 60, ac: 18, dex: 11, source: 'volo' },
+            'Orc Claw of Luthic': { cr: '2', hp: 45, ac: 14, dex: 12, source: 'volo' },
+            'Orc Hand of Yurtrus': { cr: '2', hp: 30, ac: 12, dex: 11, source: 'volo' },
+            'Orc Nurtured One of Yurtrus': { cr: '1/2', hp: 30, ac: 9, dex: 8, source: 'volo' },
+            'Orc Red Fang of Shargaas': { cr: '3', hp: 52, ac: 15, dex: 16, source: 'volo' },
+            'Quickling': { cr: '1', hp: 10, ac: 16, dex: 23, source: 'volo' },
+            'Redcap': { cr: '3', hp: 45, ac: 13, dex: 13, source: 'volo' },
+            'Sea Spawn': { cr: '1', hp: 32, ac: 11, dex: 8, source: 'volo' },
+            'Shadow Mastiff': { cr: '2', hp: 33, ac: 12, dex: 14, source: 'volo' },
+            'Shoosuva': { cr: '8', hp: 110, ac: 14, dex: 13, source: 'volo' },
+            'Slithering Tracker': { cr: '3', hp: 32, ac: 14, dex: 19, source: 'volo' },
+            'Spawn of Kyuss': { cr: '5', hp: 76, ac: 10, dex: 10, source: 'volo' },
+            'Stegosaurus': { cr: '4', hp: 76, ac: 13, dex: 9, source: 'volo' },
+            'Stone Giant Dreamwalker': { cr: '10', hp: 161, ac: 18, dex: 14, source: 'volo' },
+            'Storm Giant Quintessent': { cr: '16', hp: 230, ac: 12, dex: 14, source: 'volo' },
+            'Swashbuckler': { cr: '3', hp: 66, ac: 17, dex: 18, source: 'volo' },
+            'Tanarukk': { cr: '5', hp: 95, ac: 14, dex: 12, source: 'volo' },
+            'Thorny': { cr: '1', hp: 27, ac: 14, dex: 12, source: 'volo' },
+            'Tlincalli': { cr: '5', hp: 85, ac: 15, dex: 13, source: 'volo' },
+            'Transmuter': { cr: '5', hp: 40, ac: 12, dex: 14, source: 'volo' },
+            'Trapper': { cr: '3', hp: 85, ac: 13, dex: 10, source: 'volo' },
+            'Ulitharid': { cr: '9', hp: 127, ac: 15, dex: 12, source: 'volo' },
+            'Vargouille': { cr: '1', hp: 13, ac: 12, dex: 14, source: 'volo' },
+            'Vegepygmy': { cr: '1/4', hp: 9, ac: 13, dex: 14, source: 'volo' },
+            'Vegepygmy Chief': { cr: '2', hp: 33, ac: 14, dex: 14, source: 'volo' },
+            'War Priest': { cr: '9', hp: 117, ac: 18, dex: 10, source: 'volo' },
+            'Warlock of the Archfey': { cr: '4', hp: 49, ac: 11, dex: 13, source: 'volo' },
+            'Warlock of the Fiend': { cr: '7', hp: 78, ac: 12, dex: 14, source: 'volo' },
+            'Warlock of the Great Old One': { cr: '6', hp: 91, ac: 12, dex: 14, source: 'volo' },
+            'Warlord': { cr: '12', hp: 229, ac: 18, dex: 16, source: 'volo' },
+            'Wood Woad': { cr: '5', hp: 75, ac: 18, dex: 12, source: 'volo' },
+            'Xvart': { cr: '1/8', hp: 7, ac: 13, dex: 14, source: 'volo' },
+            'Xvart Warlock of Raxivort': { cr: '1', hp: 22, ac: 12, dex: 14, source: 'volo' },
+            'Yeth Hound': { cr: '4', hp: 51, ac: 14, dex: 17, source: 'volo' },
+            'Yuan-ti Anathema': { cr: '12', hp: 189, ac: 16, dex: 13, source: 'volo' },
+            'Yuan-ti Broodguard': { cr: '2', hp: 45, ac: 14, dex: 14, source: 'volo' },
+            'Yuan-ti Mind Whisperer': { cr: '4', hp: 71, ac: 14, dex: 14, source: 'volo' },
+            'Yuan-ti Nightmare Speaker': { cr: '4', hp: 71, ac: 14, dex: 14, source: 'volo' },
+            'Yuan-ti Pit Master': { cr: '5', hp: 88, ac: 14, dex: 14, source: 'volo' },
+            // ===== CURSE OF STRAHD =====
+            'Strahd von Zarovich': { cr: '15', hp: 144, ac: 16, dex: 18, source: 'cos' },
+            'Rahadin': { cr: '10', hp: 135, ac: 18, dex: 16, source: 'cos' },
+            'Baba Lysaga': { cr: '11', hp: 120, ac: 15, dex: 12, source: 'cos' },
+            'Izek Strazni': { cr: '5', hp: 112, ac: 14, dex: 11, source: 'cos' },
+            'Vladimir Horngaard': { cr: '7', hp: 192, ac: 17, dex: 10, source: 'cos' },
+            'Mongrelfolk': { cr: '1/4', hp: 26, ac: 11, dex: 9, source: 'cos' },
+            'Strahd Zombie': { cr: '1', hp: 30, ac: 10, dex: 8, source: 'cos' },
+            'Wereraven': { cr: '2', hp: 31, ac: 12, dex: 15, source: 'cos' },
+            'Barovian Witch': { cr: '1/2', hp: 16, ac: 10, dex: 11, source: 'cos' },
+            'Broom of Animated Attack': { cr: '1/4', hp: 17, ac: 15, dex: 17, source: 'cos' },
+            'Phantom Warrior': { cr: '3', hp: 45, ac: 16, dex: 11, source: 'cos' },
+            'Vampiric Mist': { cr: '3', hp: 30, ac: 13, dex: 16, source: 'cos' },
+            'Boneless': { cr: '1', hp: 26, ac: 12, dex: 14, source: 'cos' },
+            'Tree Blight': { cr: '7', hp: 149, ac: 15, dex: 10, source: 'cos' },
+            // ===== MORDENKAINEN'S TOME OF FOES =====
+            'Allip': { cr: '5', hp: 40, ac: 13, dex: 17, source: 'mtof' },
+            'Astral Dreadnought': { cr: '21', hp: 297, ac: 20, dex: 7, source: 'mtof' },
+            'Berbalang': { cr: '2', hp: 38, ac: 14, dex: 18, source: 'mtof' },
+            'Boneclaw': { cr: '12', hp: 127, ac: 16, dex: 16, source: 'mtof' },
+            'Cadaver Collector': { cr: '14', hp: 189, ac: 17, dex: 14, source: 'mtof' },
+            'Corpse Flower': { cr: '8', hp: 127, ac: 12, dex: 14, source: 'mtof' },
+            'Deathlock': { cr: '4', hp: 36, ac: 12, dex: 14, source: 'mtof' },
+            'Deathlock Mastermind': { cr: '8', hp: 110, ac: 13, dex: 16, source: 'mtof' },
+            'Deathlock Wight': { cr: '3', hp: 37, ac: 12, dex: 14, source: 'mtof' },
+            'Demogorgon': { cr: '26', hp: 464, ac: 22, dex: 15, source: 'mtof' },
+            'Dire Troll': { cr: '13', hp: 172, ac: 15, dex: 12, source: 'mtof' },
+            'Drow Arachnomancer': { cr: '13', hp: 162, ac: 15, dex: 16, source: 'mtof' },
+            'Drow Favored Consort': { cr: '18', hp: 225, ac: 15, dex: 20, source: 'mtof' },
+            'Drow House Captain': { cr: '9', hp: 162, ac: 16, dex: 18, source: 'mtof' },
+            'Drow Inquisitor': { cr: '14', hp: 143, ac: 16, dex: 17, source: 'mtof' },
+            'Drow Matron Mother': { cr: '20', hp: 262, ac: 17, dex: 18, source: 'mtof' },
+            'Drow Shadowblade': { cr: '11', hp: 150, ac: 17, dex: 19, source: 'mtof' },
+            'Duergar Despot': { cr: '12', hp: 119, ac: 21, dex: 11, source: 'mtof' },
+            'Duergar Hammerer': { cr: '2', hp: 33, ac: 17, dex: 7, source: 'mtof' },
+            'Duergar Mind Master': { cr: '2', hp: 39, ac: 14, dex: 17, source: 'mtof' },
+            'Duergar Screamer': { cr: '3', hp: 38, ac: 15, dex: 7, source: 'mtof' },
+            'Duergar Soulblade': { cr: '1', hp: 18, ac: 14, dex: 16, source: 'mtof' },
+            'Duergar Stone Guard': { cr: '2', hp: 39, ac: 18, dex: 11, source: 'mtof' },
+            'Duergar Warlord': { cr: '6', hp: 75, ac: 20, dex: 11, source: 'mtof' },
+            'Duergar Xarrorn': { cr: '2', hp: 26, ac: 18, dex: 11, source: 'mtof' },
+            'Dybbuk': { cr: '4', hp: 37, ac: 14, dex: 19, source: 'mtof' },
+            'Eidolon': { cr: '12', hp: 63, ac: 9, dex: 8, source: 'mtof' },
+            'Graz\'zt': { cr: '24', hp: 346, ac: 20, dex: 15, source: 'mtof' },
+            'Howler': { cr: '8', hp: 90, ac: 16, dex: 16, source: 'mtof' },
+            'Juiblex': { cr: '23', hp: 350, ac: 18, dex: 10, source: 'mtof' },
+            'Marut': { cr: '25', hp: 432, ac: 22, dex: 12, source: 'mtof' },
+            'Moloch': { cr: '21', hp: 253, ac: 19, dex: 17, source: 'mtof' },
+            'Molydeus': { cr: '21', hp: 216, ac: 19, dex: 22, source: 'mtof' },
+            'Nagpa': { cr: '17', hp: 187, ac: 19, dex: 18, source: 'mtof' },
+            'Nightwalker': { cr: '20', hp: 297, ac: 14, dex: 12, source: 'mtof' },
+            'Oblex Spawn': { cr: '1/4', hp: 18, ac: 13, dex: 16, source: 'mtof' },
+            'Adult Oblex': { cr: '5', hp: 75, ac: 14, dex: 16, source: 'mtof' },
+            'Elder Oblex': { cr: '10', hp: 115, ac: 16, dex: 16, source: 'mtof' },
+            'Orcus': { cr: '26', hp: 405, ac: 17, dex: 14, source: 'mtof' },
+            'Phoenix': { cr: '16', hp: 175, ac: 18, dex: 26, source: 'mtof' },
+            'Retriever': { cr: '14', hp: 210, ac: 19, dex: 16, source: 'mtof' },
+            'Sibriex': { cr: '18', hp: 150, ac: 17, dex: 3, source: 'mtof' },
+            'Skull Lord': { cr: '15', hp: 105, ac: 18, dex: 16, source: 'mtof' },
+            'Soul Monger': { cr: '11', hp: 123, ac: 17, dex: 14, source: 'mtof' },
+            'Spirit Troll': { cr: '11', hp: 97, ac: 17, dex: 17, source: 'mtof' },
+            'Star Spawn Grue': { cr: '1/4', hp: 17, ac: 11, dex: 12, source: 'mtof' },
+            'Star Spawn Hulk': { cr: '10', hp: 136, ac: 16, dex: 8, source: 'mtof' },
+            'Star Spawn Larva Mage': { cr: '16', hp: 168, ac: 16, dex: 17, source: 'mtof' },
+            'Star Spawn Mangler': { cr: '5', hp: 71, ac: 14, dex: 18, source: 'mtof' },
+            'Star Spawn Seer': { cr: '13', hp: 153, ac: 17, dex: 12, source: 'mtof' },
+            'Steeder': { cr: '1', hp: 30, ac: 14, dex: 16, source: 'mtof' },
+            'Steel Predator': { cr: '16', hp: 207, ac: 20, dex: 16, source: 'mtof' },
+            'Sword Wraith Commander': { cr: '8', hp: 127, ac: 18, dex: 14, source: 'mtof' },
+            'Sword Wraith Warrior': { cr: '3', hp: 45, ac: 16, dex: 14, source: 'mtof' },
+            'Titivilus': { cr: '16', hp: 150, ac: 20, dex: 22, source: 'mtof' },
+            'Venom Troll': { cr: '7', hp: 94, ac: 15, dex: 13, source: 'mtof' },
+            'Wastrilith': { cr: '13', hp: 157, ac: 18, dex: 18, source: 'mtof' },
+            'Yeenoghu': { cr: '24', hp: 333, ac: 20, dex: 16, source: 'mtof' },
+            'Zariel': { cr: '26', hp: 580, ac: 21, dex: 27, source: 'mtof' },
+            'Zuggtmoy': { cr: '23', hp: 304, ac: 18, dex: 12, source: 'mtof' },
+            // ===== FIZBAN'S TREASURY OF DRAGONS =====
+            'Ancient Amethyst Dragon': { cr: '23', hp: 444, ac: 20, dex: 14, source: 'ftod' },
+            'Adult Amethyst Dragon': { cr: '16', hp: 229, ac: 19, dex: 14, source: 'ftod' },
+            'Young Amethyst Dragon': { cr: '9', hp: 150, ac: 18, dex: 14, source: 'ftod' },
+            'Amethyst Dragon Wyrmling': { cr: '4', hp: 75, ac: 17, dex: 14, source: 'ftod' },
+            'Ancient Crystal Dragon': { cr: '19', hp: 222, ac: 20, dex: 12, source: 'ftod' },
+            'Adult Crystal Dragon': { cr: '12', hp: 172, ac: 16, dex: 12, source: 'ftod' },
+            'Young Crystal Dragon': { cr: '6', hp: 95, ac: 15, dex: 12, source: 'ftod' },
+            'Crystal Dragon Wyrmling': { cr: '2', hp: 32, ac: 14, dex: 12, source: 'ftod' },
+            'Ancient Deep Dragon': { cr: '18', hp: 201, ac: 20, dex: 15, source: 'ftod' },
+            'Adult Deep Dragon': { cr: '11', hp: 147, ac: 17, dex: 15, source: 'ftod' },
+            'Young Deep Dragon': { cr: '5', hp: 93, ac: 16, dex: 15, source: 'ftod' },
+            'Deep Dragon Wyrmling': { cr: '1', hp: 27, ac: 15, dex: 15, source: 'ftod' },
+            'Ancient Emerald Dragon': { cr: '21', hp: 332, ac: 20, dex: 14, source: 'ftod' },
+            'Adult Emerald Dragon': { cr: '14', hp: 207, ac: 18, dex: 14, source: 'ftod' },
+            'Young Emerald Dragon': { cr: '8', hp: 142, ac: 17, dex: 14, source: 'ftod' },
+            'Emerald Dragon Wyrmling': { cr: '3', hp: 45, ac: 16, dex: 14, source: 'ftod' },
+            'Ancient Moonstone Dragon': { cr: '21', hp: 330, ac: 20, dex: 18, source: 'ftod' },
+            'Adult Moonstone Dragon': { cr: '15', hp: 195, ac: 19, dex: 18, source: 'ftod' },
+            'Young Moonstone Dragon': { cr: '8', hp: 126, ac: 18, dex: 18, source: 'ftod' },
+            'Moonstone Dragon Wyrmling': { cr: '3', hp: 39, ac: 17, dex: 18, source: 'ftod' },
+            'Ancient Sapphire Dragon': { cr: '22', hp: 370, ac: 21, dex: 14, source: 'ftod' },
+            'Adult Sapphire Dragon': { cr: '15', hp: 207, ac: 19, dex: 14, source: 'ftod' },
+            'Young Sapphire Dragon': { cr: '9', hp: 157, ac: 18, dex: 14, source: 'ftod' },
+            'Sapphire Dragon Wyrmling': { cr: '4', hp: 45, ac: 17, dex: 14, source: 'ftod' },
+            'Ancient Topaz Dragon': { cr: '20', hp: 280, ac: 20, dex: 14, source: 'ftod' },
+            'Adult Topaz Dragon': { cr: '13', hp: 210, ac: 18, dex: 14, source: 'ftod' },
+            'Young Topaz Dragon': { cr: '7', hp: 127, ac: 17, dex: 14, source: 'ftod' },
+            'Topaz Dragon Wyrmling': { cr: '2', hp: 36, ac: 16, dex: 14, source: 'ftod' },
+            'Dracohydra': { cr: '17', hp: 218, ac: 17, dex: 12, source: 'ftod' },
+            'Dragonblood Ooze': { cr: '5', hp: 68, ac: 14, dex: 6, source: 'ftod' },
+            'Dragonbone Golem': { cr: '11', hp: 161, ac: 18, dex: 10, source: 'ftod' },
+            'Dragonflesh Golem': { cr: '8', hp: 103, ac: 14, dex: 9, source: 'ftod' },
+            'Dragonnel': { cr: '2', hp: 58, ac: 13, dex: 15, source: 'ftod' },
+            'Draconian Dreadnought': { cr: '4', hp: 57, ac: 17, dex: 10, source: 'ftod' },
+            'Draconian Foot Soldier': { cr: '1/2', hp: 22, ac: 14, dex: 11, source: 'ftod' },
+            'Draconian Infiltrator': { cr: '3', hp: 39, ac: 15, dex: 16, source: 'ftod' },
+            'Draconian Mage': { cr: '2', hp: 40, ac: 15, dex: 14, source: 'ftod' },
+            'Draconian Mastermind': { cr: '6', hp: 67, ac: 17, dex: 14, source: 'ftod' },
+            'Elder Brain Dragon': { cr: '22', hp: 350, ac: 17, dex: 11, source: 'ftod' },
+            'Eyedrake': { cr: '8', hp: 119, ac: 16, dex: 12, source: 'ftod' },
+            'Gem Stalker': { cr: '5', hp: 67, ac: 17, dex: 14, source: 'ftod' },
+            'Hoard Mimic': { cr: '8', hp: 123, ac: 14, dex: 12, source: 'ftod' },
+            'Hollow Dragon': { cr: '18', hp: 241, ac: 19, dex: 10, source: 'ftod' },
+            'Liondrake': { cr: '6', hp: 119, ac: 16, dex: 12, source: 'ftod' },
+            'Swarm of Hoard Scarabs': { cr: '2', hp: 31, ac: 14, dex: 17, source: 'ftod' }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMonsterList();
+            loadEncounter();
+        });
+
+        function filterMonsters() {
+            renderMonsterList();
+        }
+
+        function setSourceFilter(source) {
+            currentSourceFilter = source;
+            document.querySelectorAll('#sourceFilters .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.source === source);
+            });
+            renderMonsterList();
+        }
+
+        function setCRFilter(cr) {
+            currentCRFilter = cr;
+            document.querySelectorAll('#crFilters .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cr === cr);
+            });
+            renderMonsterList();
+        }
+
+        function getCRValue(cr) {
+            if (cr === '1/8') return 0.125;
+            if (cr === '1/4') return 0.25;
+            if (cr === '1/2') return 0.5;
+            return parseFloat(cr);
+        }
+
+        function matchesCRFilter(cr) {
+            if (currentCRFilter === 'all') return true;
+            const crVal = getCRValue(cr);
+            switch (currentCRFilter) {
+                case '0-1': return crVal <= 1;
+                case '2-4': return crVal >= 2 && crVal <= 4;
+                case '5-10': return crVal >= 5 && crVal <= 10;
+                case '11-16': return crVal >= 11 && crVal <= 16;
+                case '17+': return crVal >= 17;
+                default: return true;
+            }
+        }
+
+        function renderMonsterList() {
+            const search = document.getElementById('monsterSearch').value.toLowerCase();
+            const list = document.getElementById('monsterList');
+
+            const filtered = Object.entries(MONSTERS).filter(([name, data]) => {
+                if (search && !name.toLowerCase().includes(search)) return false;
+                if (currentSourceFilter !== 'all' && data.source !== currentSourceFilter) return false;
+                if (!matchesCRFilter(data.cr)) return false;
+                return true;
+            }).sort((a, b) => a[0].localeCompare(b[0]));
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state">No monsters found</div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(([name, data]) => `
+                <div class="monster-item" onclick="addMonster('${name.replace(/'/g, "\\'")}')">
+                    <div>
+                        <div class="monster-name">${name}</div>
+                        <div class="monster-source">${getSourceName(data.source)}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="monster-cr">CR ${data.cr}</div>
+                        <button class="add-btn" onclick="event.stopPropagation(); addMonster('${name.replace(/'/g, "\\'")}')">+ADD</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getSourceName(code) {
+            const sources = {
+                'mm': 'Monster Manual',
+                'volo': "Volo's Guide",
+                'mtof': "Mordenkainen's Tome",
+                'ftod': "Fizban's Treasury",
+                'cos': 'Curse of Strahd',
+                'toa': 'Tomb of Annihilation',
+                'skt': 'Storm King\'s Thunder',
+                'hotdq': 'Hoard of Dragon Queen',
+                'rot': 'Rise of Tiamat',
+                'pota': 'Princes of Apocalypse',
+                'oota': 'Out of the Abyss',
+                'bgdia': 'Baldur\'s Gate: DiA',
+                'idrf': 'Icewind Dale: RotFM',
+                'wdh': 'Waterdeep: Dragon Heist',
+                'wdmm': 'Waterdeep: DotMM'
+            };
+            return sources[code] || code.toUpperCase();
+        }
+
+        function addMonster(name) {
+            const monster = MONSTERS[name];
+            if (!monster) return;
+
+            // Check if already in roster
+            const existing = encounterRoster.find(m => m.name === name);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                encounterRoster.push({
+                    name: name,
+                    cr: monster.cr,
+                    hp: monster.hp,
+                    ac: monster.ac,
+                    initMod: monster.dex ? Math.floor((monster.dex - 10) / 2) : 0,
+                    quantity: 1,
+                    source: monster.source
+                });
+            }
+
+            renderRoster();
+            saveEncounter();
+        }
+
+        function removeMonster(index) {
+            encounterRoster.splice(index, 1);
+            renderRoster();
+            saveEncounter();
+        }
+
+        function updateQuantity(index, value) {
+            const qty = parseInt(value) || 1;
+            encounterRoster[index].quantity = Math.max(1, qty);
+            saveEncounter();
+        }
+
+        function renderRoster() {
+            const tbody = document.getElementById('rosterBody');
+            const btn = document.getElementById('rollInitiativeBtn');
+
+            if (encounterRoster.length === 0) {
+                tbody.innerHTML = '<tr id="emptyRoster"><td colspan="7" class="empty-state">Add monsters from the compendium</td></tr>';
+                btn.disabled = true;
+                return;
+            }
+
+            btn.disabled = false;
+            tbody.innerHTML = encounterRoster.map((m, i) => `
+                <tr>
+                    <td>${m.name}</td>
+                    <td>${m.cr}</td>
+                    <td>${m.hp}</td>
+                    <td>${m.ac}</td>
+                    <td>${m.initMod >= 0 ? '+' : ''}${m.initMod}</td>
+                    <td><input type="number" value="${m.quantity}" min="1" onchange="updateQuantity(${i}, this.value)"></td>
+                    <td><button class="remove-btn" onclick="removeMonster(${i})">X</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function rollInitiative() {
+            turnOrder = [];
+
+            // Roll for each monster instance
+            encounterRoster.forEach(monster => {
+                for (let i = 0; i < monster.quantity; i++) {
+                    const roll = Math.floor(Math.random() * 20) + 1;
+                    const total = roll + monster.initMod;
+                    turnOrder.push({
+                        type: 'monster',
+                        name: monster.quantity > 1 ? `${monster.name} ${i + 1}` : monster.name,
+                        initiative: total,
+                        roll: roll,
+                        modifier: monster.initMod,
+                        hp: monster.hp,
+                        maxHp: monster.hp,
+                        ac: monster.ac
+                    });
+                }
+            });
+
+            // Sort by initiative (highest first)
+            turnOrder.sort((a, b) => b.initiative - a.initiative);
+            initiativeRolled = true;
+
+            renderTurnOrder();
+            saveEncounter();
+        }
+
+        function addPlayer() {
+            const nameInput = document.getElementById('playerName');
+            const initInput = document.getElementById('playerInit');
+
+            const name = nameInput.value.trim();
+            const init = parseInt(initInput.value);
+
+            if (!name) {
+                alert('Please enter a player name');
+                return;
+            }
+            if (isNaN(init)) {
+                alert('Please enter a valid initiative number');
+                return;
+            }
+
+            turnOrder.push({
+                type: 'player',
+                name: name,
+                initiative: init,
+                roll: init,
+                modifier: 0
+            });
+
+            // Re-sort
+            turnOrder.sort((a, b) => b.initiative - a.initiative);
+
+            nameInput.value = '';
+            initInput.value = '';
+
+            renderTurnOrder();
+            saveEncounter();
+        }
+
+        function removeFromTurnOrder(index) {
+            turnOrder.splice(index, 1);
+            renderTurnOrder();
+            saveEncounter();
+        }
+
+        function renderTurnOrder() {
+            const container = document.getElementById('turnOrder');
+
+            if (turnOrder.length === 0) {
+                container.innerHTML = '<div class="empty-state">Roll initiative to begin combat</div>';
+                return;
+            }
+
+            container.innerHTML = turnOrder.map((t, i) => `
+                <div class="turn-item ${t.type}">
+                    <div class="turn-initiative">${t.initiative}</div>
+                    <div class="turn-name">
+                        ${t.name}
+                        ${t.type === 'monster' ? `<div class="turn-hp">HP: ${t.hp}/${t.maxHp} | AC: ${t.ac}</div>` : ''}
+                    </div>
+                    <button class="remove-btn" onclick="removeFromTurnOrder(${i})">X</button>
+                </div>
+            `).join('');
+        }
+
+        function clearEncounter() {
+            if (confirm('Clear all monsters and turn order?')) {
+                encounterRoster = [];
+                turnOrder = [];
+                initiativeRolled = false;
+                renderRoster();
+                renderTurnOrder();
+                saveEncounter();
+            }
+        }
+
+        function resetInitiative() {
+            turnOrder = [];
+            initiativeRolled = false;
+            renderTurnOrder();
+            saveEncounter();
+        }
+
+        function saveEncounter() {
+            localStorage.setItem('dnd-combat-roster', JSON.stringify(encounterRoster));
+            localStorage.setItem('dnd-combat-turnorder', JSON.stringify(turnOrder));
+        }
+
+        function loadEncounter() {
+            try {
+                const roster = localStorage.getItem('dnd-combat-roster');
+                const order = localStorage.getItem('dnd-combat-turnorder');
+                if (roster) encounterRoster = JSON.parse(roster);
+                if (order) turnOrder = JSON.parse(order);
+                renderRoster();
+                renderTurnOrder();
+            } catch (e) {
+                console.error('Error loading encounter:', e);
+            }
+        }
+    </script>
+</body>
+</html>
